@@ -84,5 +84,3 @@ export const setInitialUserRole = onCall(async (request) => {
     throw new HttpsError('internal', 'An internal error occurred while initializing the user account.');
   }
 });
-
-    
