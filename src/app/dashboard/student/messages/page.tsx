@@ -6,12 +6,8 @@ import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, 
 import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline, Settings, BookCopy, Zap, SquarePen, Flame, CheckCircle, BookOpen, MessageSquare, Loader2 } from 'lucide-react';
 import { UserProfile } from '@/components/ui/user-profile';
 import { cn } from '@/lib/utils';
-import dynamic from 'next/dynamic';
+import { MessagesContent } from '@/components/dashboard/student/MessagesContent';
 
-const MessagesContent = dynamic(() => import('@/components/dashboard/student/MessagesContent').then(mod => mod.MessagesContent), {
-  ssr: false,
-  loading: () => <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>
-});
 
 export default function StudentMessagesPage() {
   
