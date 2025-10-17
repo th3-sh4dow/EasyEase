@@ -211,8 +211,8 @@ export function CourseManagement() {
                     <span>{course.studentIds?.length || 0} Students Enrolled</span>
                   </div>
                 </CardContent>
-                <CardFooter className="border-t pt-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <CardFooter className="border-t pt-4 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <Switch
                         checked={course.published}
                         onCheckedChange={() => handleTogglePublish(course)}
@@ -220,7 +220,7 @@ export function CourseManagement() {
                     />
                     <Label htmlFor={`publish-switch-${course.id}`} className="text-sm font-medium">{course.published ? 'Published' : 'Draft'}</Label>
                   </div>
-                  <Button variant="outline" size="sm">View Content</Button>
+                  <Button variant="outline" size="sm" className="flex-shrink-0">View Content</Button>
                 </CardFooter>
               </Card>
             )
