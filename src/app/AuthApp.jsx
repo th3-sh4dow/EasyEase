@@ -248,7 +248,6 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
         let message = 'An unexpected error occurred. Please try again.';
         
         switch (err.code) {
-            // Firebase Auth errors
             case 'auth/email-already-in-use':
                 message = 'This email is already associated with an account.';
                 break;
@@ -258,16 +257,10 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             case 'auth/invalid-email':
                 message = 'Please enter a valid email address.';
                 break;
-
-            // Cloud Function errors
-            case 'functions/invalid-argument':
-                message = 'There was a problem with the information provided. Please check and try again.';
-                break;
             case 'functions/internal':
-                message = 'A server error occurred during signup. Please try again later.';
-                break;
-            
-            // Default catch-all
+            case 'functions/unavailable':
+                 message = 'A server error occurred during signup. Please try again later.';
+                 break;
             default:
                 if (err.message) {
                     message = err.message;
@@ -301,20 +294,17 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
-            // This needs to be a robust, single step.
-            // We call a function that sets the role and creates the profile.
+            await sendEmailVerification(user);
+
             const functions = getFunctions(auth.app);
             const setInitialUserRole = httpsCallable(functions, 'setInitialUserRole');
             await setInitialUserRole({ uid: user.uid, role: role, email: user.email });
             
-            // The AuthProvider will handle the redirect to the correct dashboard 
-            // once the custom claim and profile are set.
-            setSuccessMessage('Account created successfully! Redirecting...');
-
+            setSuccessMessage('Account created! A verification link has been sent to your email. You will be redirected shortly.');
+            // The AuthProvider will handle the redirect to the correct dashboard.
+            
         } catch (err) {
             handleAuthError(err);
-            // Only set loading to false if there was an error. 
-            // On success, the component will unmount on redirect.
             setIsLoading(false);
         }
     };
@@ -481,5 +471,3 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
-
-    
