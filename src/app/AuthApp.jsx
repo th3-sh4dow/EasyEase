@@ -290,17 +290,20 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             
             const functions = getFunctions(auth.app);
             const setInitialUserRole = httpsCallable(functions, 'setInitialUserRole');
-            await setInitialUserRole({ uid: user.uid, role: role });
+            await setInitialUserRole({ uid: user.uid, role: role, email: user.email });
             
-            await sendEmailVerification(userCredential.user);
-            
-            setSuccessMessage('Sign up successful! Please check your email to verify your account.');
-
-            // The AuthProvider will handle the redirect to the correct dashboard.
+            // The AuthProvider will handle the redirect to the correct dashboard after the profile is created.
+            // We can optionally show a success message before the redirect happens.
+            setSuccessMessage('Sign up successful! Redirecting to your dashboard...');
 
         } catch (err) {
             handleAuthError(err);
-            setIsLoading(false);
+        } finally {
+            // Only set loading to false if there was an error. 
+            // On success, the component will unmount on redirect.
+            if (!auth.currentUser) {
+                setIsLoading(false);
+            }
         }
     };
     

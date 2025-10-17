@@ -1,15 +1,14 @@
 
 import * as admin from "firebase-admin";
-import {onUserCreate, HttpsError} from "firebase-functions/v2/auth";
-import {onCall} from "firebase-functions/v2/https";
-import {setGlobalOptions} from "firebase-functions";
+import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { setGlobalOptions } from "firebase-functions";
 import * as logger from "firebase-functions/logger";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
 // Set global options for all functions
-setGlobalOptions({maxInstances: 10});
+setGlobalOptions({ maxInstances: 10 });
 
 // Function to generate a username from an email
 const generateUsername = (email: string | undefined): string => {
@@ -20,50 +19,19 @@ const generateUsername = (email: string | undefined): string => {
     return email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') + Math.floor(Math.random() * 100);
 }
 
-
 /**
- * Triggered when a new user is created.
- * Creates a corresponding user profile in Firestore.
- */
-export const createProfile = onUserCreate(async (event) => {
-  const user = event.data;
-  const {uid, email, displayName, photoURL} = user;
-
-  // The 'role' is now passed from the client during sign-up.
-  // We access it through custom claims which we will set via a callable function.
-  // We'll default it to 'student' here as a fallback, but the callable function is the primary source.
-  const role = user.customClaims?.role || 'student';
-
-  const userProfile = {
-    id: uid,
-    email: email || "",
-    username: generateUsername(email),
-    firstName: displayName?.split(" ")[0] || "",
-    lastName: displayName?.split(" ").slice(1).join(" ") || "",
-    photoURL: photoURL || "",
-    role: role,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  };
-
-  try {
-    await admin.firestore().collection("userProfiles").doc(uid).set(userProfile);
-    logger.info(`Successfully created profile for user: ${uid} with role: ${role}`);
-  } catch (error) {
-    logger.error(`Error creating profile for user: ${uid}`, error);
-    // Optionally, you could delete the user from Auth to ensure consistency
-    // await admin.auth().deleteUser(uid);
-  }
-});
-
-
-/**
- * A callable function to set a user's role via custom claims right after sign-up.
+ * A callable function to set a user's role and create their Firestore profile.
+ * This is the single source of truth for user initialization.
  */
 export const setInitialUserRole = onCall(async (request) => {
-  const { uid, role } = request.data;
+  const { uid, role, email } = request.data;
   
-  if (!uid || !role) {
-    throw new HttpsError('invalid-argument', 'The function must be called with "uid" and "role" arguments.');
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
+  }
+
+  if (!uid || !role || !email) {
+    throw new HttpsError('invalid-argument', 'The function must be called with "uid", "role", and "email" arguments.');
   }
 
   // Ensure the role is one of the allowed values
@@ -72,16 +40,28 @@ export const setInitialUserRole = onCall(async (request) => {
   }
 
   try {
-    // Set custom user claims on the user account.
+    // 1. Set custom user claims on the user account.
     await admin.auth().setCustomUserClaims(uid, { role: role });
-    
-    // Also update the Firestore document for consistency.
-    await admin.firestore().collection('userProfiles').doc(uid).update({ role: role });
 
-    logger.info(`Successfully set role '${role}' for user ${uid}.`);
-    return { success: true, message: `Role '${role}' has been set.` };
+    // 2. Create the user profile document in Firestore.
+    const userProfile = {
+        id: uid,
+        email: email,
+        username: generateUsername(email),
+        firstName: "",
+        lastName: "",
+        photoURL: "",
+        role: role,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    await admin.firestore().collection('userProfiles').doc(uid).set(userProfile);
+
+    logger.info(`Successfully initialized user ${uid} with role '${role}' and created their profile.`);
+    return { success: true, message: `User initialized with role '${role}'.` };
   } catch (error) {
-    logger.error(`Error setting role for user ${uid}:`, error);
-    throw new HttpsError('internal', 'Unable to set user role.');
+    logger.error(`Error initializing user ${uid}:`, error);
+    // If something goes wrong, we may want to clean up the created user
+    // await admin.auth().deleteUser(uid);
+    throw new HttpsError('internal', 'Unable to initialize user.');
   }
 });
