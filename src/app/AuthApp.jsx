@@ -238,6 +238,7 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
 const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     const auth = useFirebaseAuth();
     const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -283,7 +284,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             setError("Passwords do not match.");
             return;
         }
-        if (!email || !password) {
+        if (!email || !password || !username) {
             setError("Please fill in all fields.");
             return;
         }
@@ -297,7 +298,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             // Call the cloud function to set the user's role and create their profile.
             const functions = getFunctions(auth.app);
             const setInitialUserRole = httpsCallable(functions, 'setInitialUserRole');
-            await setInitialUserRole({ uid: user.uid, role: role, email: user.email });
+            await setInitialUserRole({ uid: user.uid, role: role, email: user.email, username: username });
 
             // Send verification email
             await sendEmailVerification(user);
@@ -341,6 +342,15 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                     </div>
                 </RadioGroup>
              </div>
+            <InputField
+                id="signup-username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Username"
+                icon={<UserIcon className="w-5 h-5 text-gray-400" />}
+                autoComplete="username"
+            />
             <InputField
                 id="signup-email"
                 type="email"
@@ -474,5 +484,3 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
-
-    

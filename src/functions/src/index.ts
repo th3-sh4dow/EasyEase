@@ -32,7 +32,7 @@ export const setInitialUserRole = onCall(async (request) => {
     throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
   }
 
-  const { uid, role, email } = request.data;
+  const { uid, role, email, username } = request.data;
   
   if (!uid || !role || !email) {
     logger.error("Missing required arguments", { uid, role, email });
@@ -60,7 +60,7 @@ export const setInitialUserRole = onCall(async (request) => {
         const userProfile = {
             id: uid,
             email: email,
-            username: generateUsername(email),
+            username: username || generateUsername(email),
             firstName: "",
             lastName: "",
             photoURL: "",
