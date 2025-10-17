@@ -45,6 +45,8 @@ export interface Course {
   imageUrl?: string;
   price?: number;
   currency?: string;
+  category?: string;
+  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
   studentIds: string[];
   published: boolean;
   createdAt: Timestamp;

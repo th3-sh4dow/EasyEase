@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, BookCopy, Users, Edit, MoreVertical, Trash2, Loader2, Upload, DollarSign } from 'lucide-react';
+import { PlusCircle, BookCopy, Users, Edit, MoreVertical, Trash2, Loader2, Upload, DollarSign, Star, BookOpen } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { createCourse, updateCourse } from '@/lib/firebase/courses';
@@ -20,6 +20,18 @@ import type { Course } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { uploadCourseImage } from '@/lib/firebase/storage';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const DifficultyIndicator = ({ difficulty }: { difficulty: Course['difficulty'] }) => {
+    const baseClasses = "h-2.5 w-2.5 rounded-full mr-2";
+    switch (difficulty) {
+        case 'Beginner': return <div className={cn(baseClasses, "bg-green-500")} />;
+        case 'Intermediate': return <div className={cn(baseClasses, "bg-yellow-500")} />;
+        case 'Advanced': return <div className={cn(baseClasses, "bg-red-500")} />;
+        default: return null;
+    }
+};
 
 export function CourseManagement() {
   const { user } = useAuth();
@@ -38,6 +50,8 @@ export function CourseManagement() {
     title: '',
     description: '',
     price: '' as number | '',
+    category: 'Programming',
+    difficulty: 'Beginner' as Course['difficulty'],
   });
 
   const coursesQuery = useMemoFirebase(() => {
@@ -48,7 +62,13 @@ export function CourseManagement() {
   const { data: courses, isLoading } = useCollection<Course>(coursesQuery);
 
   const resetForm = () => {
-    setFormState({ title: '', description: '', price: '' });
+    setFormState({ 
+        title: '', 
+        description: '', 
+        price: '',
+        category: 'Programming',
+        difficulty: 'Beginner',
+    });
   }
 
   const handleOpenNewDialog = () => {
@@ -63,6 +83,8 @@ export function CourseManagement() {
         title: course.title,
         description: course.description,
         price: course.price || '',
+        category: course.category || 'Programming',
+        difficulty: course.difficulty || 'Beginner',
     });
     setIsEditCourseDialogOpen(true);
   }
@@ -72,22 +94,20 @@ export function CourseManagement() {
     setIsSaving(true);
     
     try {
+        const courseData = {
+            title: formState.title,
+            description: formState.description,
+            price: Number(formState.price) || 0,
+            category: formState.category,
+            difficulty: formState.difficulty,
+        };
+
         if (courseToEdit) {
-            // Update existing course
-            await updateCourse(firestore, courseToEdit.id, {
-                title: formState.title,
-                description: formState.description,
-                price: Number(formState.price) || 0,
-            });
+            await updateCourse(firestore, courseToEdit.id, courseData);
             toast({ title: "Course Updated", description: `"${formState.title}" has been successfully updated.` });
             setIsEditCourseDialogOpen(false);
         } else {
-            // Create new course
-            await createCourse(firestore, user.uid, {
-                title: formState.title,
-                description: formState.description,
-                price: Number(formState.price) || 0,
-            });
+            await createCourse(firestore, user.uid, courseData);
             toast({ title: "Course Created", description: `"${formState.title}" has been successfully created.` });
             setIsNewCourseDialogOpen(false);
         }
@@ -136,29 +156,37 @@ export function CourseManagement() {
       }
     }
   };
-  
-  const courseColors = [
-    { color: 'text-sky-400', borderColor: 'hover:border-sky-400/50' },
-    { color: 'text-violet-400', borderColor: 'hover:border-violet-400/50' },
-    { color: 'text-amber-400', borderColor: 'hover:border-amber-400/50' },
-    { color: 'text-rose-400', borderColor: 'hover:border-rose-400/50' },
-    { color: 'text-emerald-400', borderColor: 'hover:border-emerald-400/50' },
-    { color: 'text-blue-400', borderColor: 'hover:border-blue-400/50' },
-  ];
 
   const renderDialogContent = () => (
     <div className="grid gap-4 py-4">
         <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="title" className="text-right">Title</Label>
-        <Input id="title" value={formState.title} onChange={(e) => setFormState({...formState, title: e.target.value})} className="col-span-3" placeholder="e.g., Advanced React" />
+            <Label htmlFor="title" className="text-right">Title</Label>
+            <Input id="title" value={formState.title} onChange={(e) => setFormState({...formState, title: e.target.value})} className="col-span-3" placeholder="e.g., Advanced React" />
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="description" className="text-right">Description</Label>
-        <Textarea id="description" value={formState.description} onChange={(e) => setFormState({...formState, description: e.target.value})} className="col-span-3" placeholder="A brief summary of the course..." />
+            <Label htmlFor="description" className="text-right">Description</Label>
+            <Textarea id="description" value={formState.description} onChange={(e) => setFormState({...formState, description: e.target.value})} className="col-span-3" placeholder="A brief summary of the course..." />
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="price" className="text-right">Price (USD)</Label>
-        <Input id="price" type="number" value={formState.price} onChange={(e) => setFormState({...formState, price: e.target.value === '' ? '' : Number(e.target.value)})} className="col-span-3" placeholder="Leave blank for Free" />
+            <Label htmlFor="price" className="text-right">Price (USD)</Label>
+            <Input id="price" type="number" value={formState.price} onChange={(e) => setFormState({...formState, price: e.target.value === '' ? '' : Number(e.target.value)})} className="col-span-3" placeholder="Leave blank for Free" />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="category" className="text-right">Category</Label>
+            <Input id="category" value={formState.category} onChange={(e) => setFormState({...formState, category: e.target.value})} className="col-span-3" placeholder="e.g., Programming" />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="difficulty" className="text-right">Difficulty</Label>
+            <Select value={formState.difficulty} onValueChange={(value: Course['difficulty']) => setFormState({...formState, difficulty: value })}>
+                <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select difficulty" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="Beginner">Beginner</SelectItem>
+                    <SelectItem value="Intermediate">Intermediate</SelectItem>
+                    <SelectItem value="Advanced">Advanced</SelectItem>
+                </SelectContent>
+            </Select>
         </div>
     </div>
   );
@@ -168,7 +196,7 @@ export function CourseManagement() {
        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <BookCopy className="w-8 h-8 text-primary" />
+          <BookOpen className="w-8 h-8 text-primary" />
           <h1 className="text-3xl font-bold font-headline">Course Management</h1>
         </div>
         <Dialog open={isNewCourseDialogOpen} onOpenChange={setIsNewCourseDialogOpen}>
@@ -234,57 +262,63 @@ export function CourseManagement() {
 
       {!isLoading && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {courses?.map((course, index) => {
-            const style = courseColors[index % courseColors.length];
-            return (
-              <Card key={course.id} className={cn("flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 overflow-hidden", style.borderColor)}>
-                 <div className="relative aspect-video bg-muted">
-                  {course.imageUrl ? (
-                      <Image src={course.imageUrl} alt={course.title} layout="fill" objectFit="cover" />
-                  ) : (
-                    <div className="flex items-center justify-center h-full bg-muted">
-                        <BookCopy className="w-12 h-12 text-muted-foreground/50" />
-                    </div>
-                  )}
-                   <div className="absolute inset-0 bg-black/20" />
-                   <Button size="sm" className="absolute top-2 right-2" onClick={() => handleUploadClick(course.id)} disabled={isUploading === course.id}>
-                    {isUploading === course.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <CardHeader>
-                  <div className="flex justify-between items-start gap-2">
-                      <CardTitle className="leading-tight flex-1">{course.title}</CardTitle>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-2 flex-shrink-0">
-                                <MoreVertical className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenEditDialog(course)}><Edit className="mr-2 h-4 w-4"/> Edit Course</DropdownMenuItem>
-                            <DropdownMenuItem><Users className="mr-2 h-4 w-4"/> View Students</DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-500"><Trash2 className="mr-2 h-4 w-4"/> Delete Course</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                  </div>
-                  <CardDescription className="line-clamp-2 pt-1">{course.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 space-y-2">
-                    {course.price && course.price > 0 ? (
-                        <div className="flex items-center gap-1 text-lg font-semibold text-green-400">
-                        <DollarSign className="h-5 w-5" />
-                        <span>{course.price.toFixed(2)}</span>
-                        </div>
+          {courses?.map((course) => (
+              <Card key={course.id} className="group/card flex flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <div className="relative aspect-video">
+                    {course.imageUrl ? (
+                        <Image src={course.imageUrl} alt={course.title} layout="fill" objectFit="cover" className="transition-transform duration-300 group-hover/card:scale-105" />
                     ) : (
-                        <div className="text-lg font-semibold text-green-400">Free</div>
+                        <div className="flex items-center justify-center h-full bg-muted"><BookCopy className="w-12 h-12 text-muted-foreground/30" /></div>
                     )}
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Users className="w-4 h-4 mr-2" />
-                    <span>{course.studentIds?.length || 0} Students</span>
-                  </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div className="absolute top-2 left-2 flex gap-2">
+                        {course.category && <Badge variant="secondary" className="bg-black/50 text-white backdrop-blur-sm">{course.category}</Badge>}
+                    </div>
+                     <div className="absolute bottom-2 left-2 flex items-center gap-2">
+                        {course.difficulty && (
+                            <Badge variant="secondary" className="bg-black/50 text-white backdrop-blur-sm flex items-center">
+                                <DifficultyIndicator difficulty={course.difficulty} />
+                                {course.difficulty}
+                            </Badge>
+                        )}
+                    </div>
+                     <Button size="icon" variant="secondary" className="absolute top-2 right-2 h-8 w-8" onClick={() => handleUploadClick(course.id)} disabled={isUploading === course.id}>
+                        {isUploading === course.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    </Button>
+                </div>
+                <CardHeader className="p-4 flex-1">
+                    <CardTitle className="line-clamp-2 leading-tight h-12">{course.title}</CardTitle>
+                    <div className="flex items-center text-sm text-muted-foreground pt-2">
+                        <Users className="w-4 h-4 mr-2" />
+                        <span>{course.studentIds?.length || 0} Students</span>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                    <div className="flex justify-between items-center">
+                        {course.price && course.price > 0 ? (
+                            <div className="flex items-center gap-1 text-xl font-bold text-green-400">
+                                <DollarSign className="h-5 w-5" />
+                                <span>{course.price.toFixed(2)}</span>
+                            </div>
+                        ) : (
+                            <div className="text-xl font-bold text-green-400">Free</div>
+                        )}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenEditDialog(course)}><Edit className="mr-2 h-4 w-4"/> Edit Details</DropdownMenuItem>
+                                <DropdownMenuItem><Users className="mr-2 h-4 w-4"/> View Students</DropdownMenuItem>
+                                <DropdownMenuItem className="text-red-500"><Trash2 className="mr-2 h-4 w-4"/> Delete Course</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </CardContent>
-                <CardFooter className="border-t pt-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-2">
+                <CardFooter className="p-4 border-t flex justify-between items-center gap-2">
+                    <div className="flex items-center space-x-2 flex-shrink-0">
                         <Switch
                             checked={course.published}
                             onCheckedChange={() => handleTogglePublish(course)}
@@ -292,11 +326,10 @@ export function CourseManagement() {
                         />
                         <Label htmlFor={`publish-switch-${course.id}`} className="text-sm font-medium">{course.published ? 'Published' : 'Draft'}</Label>
                     </div>
-                    <Button variant="outline" size="sm">View Content</Button>
+                    <Button variant="outline" size="sm" className='flex-shrink-0'>View Content</Button>
                 </CardFooter>
               </Card>
-            )
-          })}
+          ))}
         </div>
       )}
     </div>

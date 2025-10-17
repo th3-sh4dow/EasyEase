@@ -12,11 +12,13 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { Course } from '@/lib/types';
 
+type CourseCreationData = Pick<Course, 'title' | 'description' | 'price' | 'category' | 'difficulty'>;
+
 /**
  * Creates a new course for an institute.
  * This is a non-blocking operation.
  */
-export function createCourse(firestore: Firestore, instituteId: string, data: Pick<Course, 'title' | 'description' | 'price'>): void {
+export function createCourse(firestore: Firestore, instituteId: string, data: CourseCreationData): void {
   const coursesCollectionRef = collection(firestore, 'courses');
   const newCourseData = {
     ...data,
@@ -44,7 +46,7 @@ export function createCourse(firestore: Firestore, instituteId: string, data: Pi
  * Updates an existing course.
  * This is a non-blocking operation.
  */
-export function updateCourse(firestore: Firestore, courseId: string, data: Partial<Pick<Course, 'title' | 'description' | 'published' | 'imageUrl' | 'price' | 'currency'>>): void {
+export function updateCourse(firestore: Firestore, courseId: string, data: Partial<Course>): void {
   const courseRef = doc(firestore, 'courses', courseId);
   const updateData = {
     ...data,

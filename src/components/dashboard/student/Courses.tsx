@@ -10,8 +10,19 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookCopy, Search, FileX, DollarSign } from 'lucide-react';
+import { BookCopy, Search, FileX, DollarSign, Users, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+
+const DifficultyIndicator = ({ difficulty }: { difficulty: Course['difficulty'] }) => {
+    const baseClasses = "h-2 w-2 rounded-full mr-1.5";
+    switch (difficulty) {
+        case 'Beginner': return <div className={cn(baseClasses, "bg-green-500")} />;
+        case 'Intermediate': return <div className={cn(baseClasses, "bg-yellow-500")} />;
+        case 'Advanced': return <div className={cn(baseClasses, "bg-red-500")} />;
+        default: return null;
+    }
+};
 
 export function Courses() {
   const firestore = useFirestore();
@@ -31,7 +42,8 @@ export function Courses() {
     if (!courses) return [];
     return courses.filter(course => 
       course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.description.toLowerCase().includes(searchTerm.toLowerCase())
+      course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.category?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [courses, searchTerm]);
 
@@ -58,14 +70,15 @@ export function Courses() {
           {[...Array(8)].map((_, i) => (
              <Card key={i} className="flex flex-col">
               <Skeleton className="h-40 w-full" />
-              <CardHeader>
+              <CardHeader className="p-4">
+                <Skeleton className="h-4 w-2/4 mb-2" />
                 <Skeleton className="h-6 w-3/4" />
                 <Skeleton className="h-4 w-full mt-2" />
               </CardHeader>
-               <CardContent className="flex-1">
+               <CardContent className="p-4 flex-1">
                  <Skeleton className="h-4 w-2/4" />
                </CardContent>
-              <CardFooter>
+              <CardFooter className="p-4">
                   <Skeleton className="h-10 w-full" />
               </CardFooter>
             </Card>
@@ -75,36 +88,50 @@ export function Courses() {
 
       {!isLoading && filteredCourses.length > 0 && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredCourses.map((course, index) => (
-            <Card key={course.id} className={cn("flex flex-col transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-in overflow-hidden border-border/50 hover:border-primary/50")}>
-              <div className="relative aspect-video bg-muted/50">
-                {course.imageUrl ? (
-                  <Image src={course.imageUrl} alt={course.title} layout="fill" objectFit="cover" />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <BookCopy className="w-12 h-12 text-muted-foreground/30" />
-                  </div>
-                )}
-              </div>
-              <CardHeader>
-                <CardTitle className="line-clamp-2 leading-tight h-14">{course.title}</CardTitle>
-                <CardDescription className="line-clamp-3 h-[60px] pt-1">{course.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1">
-                  {course.price && course.price > 0 ? (
-                     <div className="flex items-center gap-1 text-2xl font-bold text-green-400">
-                       <DollarSign className="h-6 w-6" />
-                       <span>{course.price.toFixed(2)}</span>
-                     </div>
-                   ) : (
-                     <div className="text-2xl font-bold text-green-400">Free</div>
-                   )}
-              </CardContent>
-              <CardFooter>
-                <Button asChild className="w-full">
-                    <Link href={`/dashboard/student/enroll/${course.id}`}>Enroll Now</Link>
-                </Button>
-              </CardFooter>
+          {filteredCourses.map((course) => (
+            <Card key={course.id} className="group/card flex flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-in">
+                <div className="relative aspect-video">
+                    <Link href={`/dashboard/student/enroll/${course.id}`} className="absolute inset-0">
+                        {course.imageUrl ? (
+                            <Image src={course.imageUrl} alt={course.title} layout="fill" objectFit="cover" className="transition-transform duration-300 group-hover/card:scale-105" />
+                        ) : (
+                            <div className="flex items-center justify-center h-full bg-muted"><BookCopy className="w-12 h-12 text-muted-foreground/30" /></div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    </Link>
+                    <div className="absolute top-2 left-2">
+                        {course.category && <Badge variant="secondary" className="bg-black/50 text-white backdrop-blur-sm">{course.category}</Badge>}
+                    </div>
+                </div>
+                <CardHeader className="p-4">
+                    <CardTitle className="line-clamp-2 leading-tight h-12">{course.title}</CardTitle>
+                    <div className="flex items-center text-xs text-muted-foreground pt-2">
+                        <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400 mr-1" /> 4.8 (1,234)
+                        <span className="mx-2">·</span>
+                        <Users className="w-3.5 h-3.5 mr-1" /> {course.studentIds?.length || 0}
+                    </div>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 flex-1">
+                     {course.difficulty && (
+                        <div className="flex items-center text-sm text-muted-foreground">
+                            <DifficultyIndicator difficulty={course.difficulty} />
+                            <span>{course.difficulty}</span>
+                        </div>
+                    )}
+                </CardContent>
+                <CardFooter className="p-4 border-t flex justify-between items-center">
+                    {course.price && course.price > 0 ? (
+                        <div className="flex items-center gap-1 text-2xl font-bold text-green-400">
+                            <DollarSign className="h-6 w-6" />
+                            <span>{course.price.toFixed(2)}</span>
+                        </div>
+                    ) : (
+                        <div className="text-2xl font-bold text-green-400">Free</div>
+                    )}
+                    <Button asChild size="sm">
+                        <Link href={`/dashboard/student/enroll/${course.id}`}>Enroll</Link>
+                    </Button>
+                </CardFooter>
             </Card>
           ))}
         </div>

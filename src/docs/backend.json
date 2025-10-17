@@ -95,7 +95,7 @@
           "type": "string",
           "description": "Reference to UserProfile (as institute). (Relationship: UserProfile 1:N Course)"
         },
-        "name": {
+        "title": {
           "type": "string",
           "description": "Name of the course."
         },
@@ -115,6 +115,15 @@
         "currency": {
           "type": "string",
           "description": "Currency of the course price (e.g., USD, EUR)."
+        },
+        "category": {
+            "type": "string",
+            "description": "The category of the course (e.g., Programming, Design)."
+        },
+        "difficulty": {
+            "type": "string",
+            "enum": ["Beginner", "Intermediate", "Advanced"],
+            "description": "The difficulty level of the course."
         },
         "studentIds": {
           "type": "array",
