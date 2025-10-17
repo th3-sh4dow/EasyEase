@@ -20,7 +20,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 type QuizState = 'loading' | 'taking' | 'results';
 type QuestionResult = 'unanswered' | 'correct' | 'incorrect';
 
-export default function DailyQuiz() {
+export function DailyQuiz() {
   const { user } = useAuth();
   const firestore = useFirestore();
 
