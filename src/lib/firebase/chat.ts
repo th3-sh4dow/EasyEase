@@ -32,7 +32,30 @@ type NewMessageData = {
  * Creates the chat document if it doesn't exist.
  * This is a non-blocking operation.
  */
-export async function saveMessage(firestore: Firestore, chatId: string, participants: { studentId: string, instituteId: string }, data: NewMessageData): Promise<void> {
+export async function saveChatMessage(firestore: Firestore, userId: string, sessionId: string, data: MessageData): Promise<void> {
+  const messagesCollectionRef = collection(firestore, `userProfiles/${userId}/chatSessions/${sessionId}/messages`);
+  const newMessageData = {
+    ...data,
+    createdAt: serverTimestamp(),
+  };
+
+  addDoc(messagesCollectionRef, newMessageData)
+    .catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: messagesCollectionRef.path,
+            operation: 'create',
+            requestResourceData: newMessageData,
+        }));
+    });
+}
+
+
+/**
+ * Saves a chat message to a specific chat conversation.
+ * Creates the chat document if it doesn't exist.
+ * This is a non-blocking operation.
+ */
+export function saveMessage(firestore: Firestore, chatId: string, participants: { studentId: string, instituteId: string }, data: NewMessageData): void {
   const chatDocRef = doc(firestore, 'chats', chatId);
   const messagesCollectionRef = collection(firestore, chatPath(chatId));
   
@@ -42,34 +65,58 @@ export async function saveMessage(firestore: Firestore, chatId: string, particip
     read: false,
   };
 
-  try {
-    const chatDoc = await getDoc(chatDocRef);
-    if (!chatDoc.exists()) {
-      // Create chat document if it's the first message
-      await setDoc(chatDocRef, {
-        participants: [participants.studentId, participants.instituteId],
-        createdAt: serverTimestamp(),
-        lastMessage: data.content,
-        lastMessageAt: serverTimestamp(),
-      });
-    } else {
-      // Update last message on existing chat
-      await updateDoc(chatDocRef, {
-        lastMessage: data.content,
-        lastMessageAt: serverTimestamp(),
-      });
-    }
+  // Use an async IIFE to handle the async logic of checking the doc
+  (async () => {
+    try {
+      const chatDoc = await getDoc(chatDocRef);
+      if (!chatDoc.exists()) {
+        const chatData = {
+          participants: [participants.studentId, participants.instituteId],
+          createdAt: serverTimestamp(),
+          lastMessage: data.content,
+          lastMessageAt: serverTimestamp(),
+        };
+        // This is a "write" operation on the chat document
+        setDoc(chatDocRef, chatData)
+          .catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: chatDocRef.path,
+              operation: 'create',
+              requestResourceData: chatData,
+            }));
+          });
+      } else {
+        const updateData = {
+          lastMessage: data.content,
+          lastMessageAt: serverTimestamp(),
+        };
+        // This is an "update" operation on the chat document
+        updateDoc(chatDocRef, updateData)
+          .catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: chatDocRef.path,
+              operation: 'update',
+              requestResourceData: updateData,
+            }));
+          });
+      }
 
-    addDoc(messagesCollectionRef, newMessageData)
-      .catch(error => {
-        console.error("Error saving chat message:", error);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: messagesCollectionRef.path,
-          operation: 'create',
-          requestResourceData: newMessageData,
+      // This is a "create" operation for the new message
+      addDoc(messagesCollectionRef, newMessageData)
+        .catch(error => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: messagesCollectionRef.path,
+            operation: 'create',
+            requestResourceData: newMessageData,
+          }));
+        });
+
+    } catch (error) {
+       // This error is for getDoc, which is a 'get' operation.
+       errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: chatDocRef.path,
+            operation: 'get',
         }));
-      });
-  } catch (error) {
-    console.error("Error ensuring chat exists:", error);
-  }
+    }
+  })();
 }
