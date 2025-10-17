@@ -32,11 +32,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isPublicPage = ['/login', '/signup', '/'].includes(pathname);
 
   useEffect(() => {
-    if (!authInitialized || !firestore) {
-      return;
-    }
+    if (!authInitialized) return; // Wait for Firebase Auth to initialize
 
     if (!user) {
+      // User is not logged in
       setProfile(null);
       setProfileLoading(false);
       if (!isPublicPage) {
@@ -44,7 +43,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       return;
     }
-    
+
+    // User is logged in, listen for profile changes
     setProfileLoading(true);
     const profileRef = doc(firestore, 'userProfiles', user.uid);
     
@@ -59,13 +59,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           setProfile(userProfile);
           
-          if (userProfile.role && !pathname.startsWith('/dashboard')) {
-            const targetDashboard = `/dashboard/${userProfile.role}`;
-             if (pathname !== targetDashboard) {
-               router.replace(targetDashboard);
-             }
+          // --- REDIRECTION LOGIC ---
+          // If we are on a public page but we have a user and a profile with a role, redirect.
+          if (isPublicPage && userProfile.role) {
+            router.replace(`/dashboard/${userProfile.role}`);
           }
+          
         } else {
+          // Profile doesn't exist yet, might be mid-signup
           setProfile(null);
         }
         setProfileLoading(false);
@@ -76,7 +77,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, [user, authInitialized, firestore, router, pathname, isPublicPage]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authInitialized, firestore, isPublicPage]);
 
 
   const value = { user, profile, loading };

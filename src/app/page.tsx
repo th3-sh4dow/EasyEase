@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
@@ -8,9 +9,9 @@ import { Hero } from '@/components/landing/hero';
 export default function Home() {
   const { user, loading } = useAuth();
   
-  // If loading, and we have a user object, AuthProvider is likely handling a redirect.
-  // We can show a loader or null.
-  if (loading && user) {
+  // While the auth state is loading, show a full-screen loader.
+  // AuthProvider is responsible for redirection, so we just wait here.
+  if (loading) {
      return (
         <div className="min-h-screen flex items-center justify-center bg-background text-lg">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
@@ -18,6 +19,7 @@ export default function Home() {
       );
   }
   
+  // If loading is finished and there's no user, show the public landing page.
   if (!user) {
     return (
       <>
@@ -30,8 +32,8 @@ export default function Home() {
     );
   }
   
-  // If user is logged in, AuthProvider is redirecting.
-  // Showing a loader here is a good user experience.
+  // If loading is finished and there IS a user, AuthProvider is handling the redirect.
+  // We continue to show the loader as a good UX measure until the redirect completes.
   return (
     <div className="min-h-screen flex items-center justify-center bg-background text-lg">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
