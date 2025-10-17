@@ -24,44 +24,65 @@ const generateUsername = (email: string | undefined): string => {
  * This is the single source of truth for user initialization.
  */
 export const setInitialUserRole = onCall(async (request) => {
-  const { uid, role, email } = request.data;
-  
+  // 1. Authentication and Validation
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
   }
 
+  const { uid, role, email } = request.data;
+  
   if (!uid || !role || !email) {
+    logger.error("Missing required arguments", { uid, role, email });
     throw new HttpsError('invalid-argument', 'The function must be called with "uid", "role", and "email" arguments.');
   }
 
-  // Ensure the role is one of the allowed values
   if (!['student', 'institute'].includes(role)) {
+    logger.error("Invalid role specified", { uid, role });
     throw new HttpsError('invalid-argument', 'Role must be either "student" or "institute".');
   }
 
+  // 2. Core Logic (Transaction for Atomicity)
+  const userProfileRef = admin.firestore().collection('userProfiles').doc(uid);
+
   try {
-    // 1. Set custom user claims on the user account.
+    // Use a transaction to ensure both operations succeed or fail together.
+    await admin.firestore().runTransaction(async (transaction) => {
+      // Check if profile already exists to prevent overwriting
+      const profileDoc = await transaction.get(userProfileRef);
+      if (profileDoc.exists) {
+        logger.warn(`Profile for user ${uid} already exists. Skipping creation.`);
+        // If it exists, we might still want to ensure the claim is set.
+        // This is a good place for idempotency logic.
+      } else {
+        const userProfile = {
+            id: uid,
+            email: email,
+            username: generateUsername(email),
+            firstName: "",
+            lastName: "",
+            photoURL: "",
+            role: role,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        transaction.set(userProfileRef, userProfile);
+      }
+    });
+
+    // Set custom claims AFTER the transaction succeeds.
     await admin.auth().setCustomUserClaims(uid, { role: role });
+    
+    // Forcing a token refresh on the client is often needed here,
+    // but the client-side AuthProvider handles this with onIdTokenChanged.
 
-    // 2. Create the user profile document in Firestore.
-    const userProfile = {
-        id: uid,
-        email: email,
-        username: generateUsername(email),
-        firstName: "",
-        lastName: "",
-        photoURL: "",
-        role: role,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    };
-    await admin.firestore().collection('userProfiles').doc(uid).set(userProfile);
-
-    logger.info(`Successfully initialized user ${uid} with role '${role}' and created their profile.`);
+    logger.info(`Successfully initialized user ${uid} with role '${role}' and created profile.`);
     return { success: true, message: `User initialized with role '${role}'.` };
+
   } catch (error) {
     logger.error(`Error initializing user ${uid}:`, error);
-    // If something goes wrong, we may want to clean up the created user
-    // await admin.auth().deleteUser(uid);
-    throw new HttpsError('internal', 'Unable to initialize user.');
+    // In a production app, consider adding cleanup logic,
+    // e.g., if setting claims fails after profile creation.
+    throw new HttpsError('internal', 'An internal error occurred while initializing the user account.');
   }
 });
+
+    

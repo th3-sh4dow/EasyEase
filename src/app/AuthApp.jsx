@@ -237,7 +237,6 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
 
 const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     const auth = useFirebaseAuth();
-    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -246,8 +245,10 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleAuthError = (err) => {
-        let message = 'An unexpected error occurred.';
+        let message = 'An unexpected error occurred. Please try again.';
+        
         switch (err.code) {
+            // Firebase Auth errors
             case 'auth/email-already-in-use':
                 message = 'This email is already associated with an account.';
                 break;
@@ -257,8 +258,20 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             case 'auth/invalid-email':
                 message = 'Please enter a valid email address.';
                 break;
+
+            // Cloud Function errors
+            case 'functions/invalid-argument':
+                message = 'There was a problem with the information provided. Please check and try again.';
+                break;
+            case 'functions/internal':
+                message = 'A server error occurred during signup. Please try again later.';
+                break;
+            
+            // Default catch-all
             default:
-                message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
+                if (err.message) {
+                    message = err.message;
+                }
                 break;
         }
         setError(message);
@@ -288,22 +301,21 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
+            // This needs to be a robust, single step.
+            // We call a function that sets the role and creates the profile.
             const functions = getFunctions(auth.app);
             const setInitialUserRole = httpsCallable(functions, 'setInitialUserRole');
             await setInitialUserRole({ uid: user.uid, role: role, email: user.email });
             
-            // The AuthProvider will handle the redirect to the correct dashboard after the profile is created.
-            // We can optionally show a success message before the redirect happens.
-            setSuccessMessage('Sign up successful! Redirecting to your dashboard...');
+            // The AuthProvider will handle the redirect to the correct dashboard 
+            // once the custom claim and profile are set.
+            setSuccessMessage('Account created successfully! Redirecting...');
 
         } catch (err) {
             handleAuthError(err);
-        } finally {
             // Only set loading to false if there was an error. 
             // On success, the component will unmount on redirect.
-            if (!auth.currentUser) {
-                setIsLoading(false);
-            }
+            setIsLoading(false);
         }
     };
     
@@ -469,3 +481,5 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
+
+    
