@@ -29,16 +29,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const loading = !authInitialized || profileLoading;
   
-  const isPublicPage = ['/login', '/signup', '/'].includes(pathname);
+  const isAuthPage = ['/login', '/signup'].includes(pathname);
+  const isDashboardPage = pathname.startsWith('/dashboard');
 
   useEffect(() => {
     if (!authInitialized) return; // Wait for Firebase Auth to initialize
 
     if (!user) {
-      // User is not logged in
+      // User is not logged in.
       setProfile(null);
       setProfileLoading(false);
-      if (!isPublicPage) {
+      // If they are on a protected dashboard page, redirect them to login.
+      if (isDashboardPage) {
         router.replace('/login');
       }
       return;
@@ -54,19 +56,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           if (user.photoURL && user.photoURL !== userProfile.photoURL) {
             updateDoc(profileRef, { photoURL: user.photoURL });
-            userProfile.photoURL = user.photoURL;
           }
 
           setProfile(userProfile);
           
           // --- REDIRECTION LOGIC ---
-          // If we are on a public page but we have a user and a profile with a role, redirect.
-          if (isPublicPage && userProfile.role) {
-            router.replace(`/dashboard/${userProfile.role}`);
+          if (userProfile.role) {
+            const targetDashboard = `/dashboard/${userProfile.role}`;
+            // If user is on a public page (/, /login, /signup) or the wrong dashboard, redirect them.
+            if (!pathname.startsWith(targetDashboard)) {
+              router.replace(targetDashboard);
+            }
           }
           
         } else {
-          // Profile doesn't exist yet, might be mid-signup
+          // Profile doesn't exist yet, might be mid-signup. Don't redirect.
           setProfile(null);
         }
         setProfileLoading(false);
@@ -74,11 +78,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error("Error fetching user profile:", error);
         setProfile(null);
         setProfileLoading(false);
+        // If there's an error, sign the user out to be safe
+        // and redirect to login.
+        if (auth) {
+            auth.signOut();
+        }
+        router.replace('/login');
     });
 
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authInitialized, firestore, isPublicPage]);
+  }, [user, authInitialized, firestore, pathname, router]);
 
 
   const value = { user, profile, loading };

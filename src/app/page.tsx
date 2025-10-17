@@ -9,34 +9,29 @@ import { Hero } from '@/components/landing/hero';
 export default function Home() {
   const { user, loading } = useAuth();
   
-  // While the auth state is loading, show a full-screen loader.
-  // AuthProvider is responsible for redirection, so we just wait here.
+  // The AuthProvider is responsible for redirection.
+  // This page will just show the public landing content.
+  // If the user is logged in, they will be redirected away by the provider.
   if (loading) {
+    // While the auth state is loading, it's good practice to show a loader
+    // to prevent a flash of the landing page for authenticated users who are
+    // about to be redirected.
      return (
         <div className="min-h-screen flex items-center justify-center bg-background text-lg">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
         </div>
       );
   }
-  
-  // If loading is finished and there's no user, show the public landing page.
-  if (!user) {
-    return (
-      <>
-        <Header />
-        <main className="flex-grow flex flex-col">
-          <Hero />
-        </main>
-        <Footer />
-      </>
-    );
-  }
-  
-  // If loading is finished and there IS a user, AuthProvider is handling the redirect.
-  // We continue to show the loader as a good UX measure until the redirect completes.
+
+  // If loading is finished, always attempt to show the public landing page.
+  // The AuthProvider will handle redirecting authenticated users away.
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background text-lg">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
-    </div>
+    <>
+      <Header />
+      <main className="flex-grow flex flex-col">
+        <Hero />
+      </main>
+      <Footer />
+    </>
   );
 }
