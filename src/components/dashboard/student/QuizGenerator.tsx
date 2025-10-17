@@ -21,7 +21,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 type QuizState = 'configuring' | 'loading' | 'taking' | 'results';
 type QuestionResult = 'unanswered' | 'correct' | 'incorrect';
 
-export default function QuizGenerator() {
+export function QuizGenerator() {
   const { user } = useAuth();
   const firestore = useFirestore();
 
