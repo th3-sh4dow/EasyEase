@@ -26,8 +26,8 @@ const PdfSummarizer = dynamic(() => import('@/components/dashboard/PdfSummarizer
 const AiTutor = dynamic(() => import('@/components/dashboard/AiTutor').then(mod => mod.AiTutor), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const ProfileSettings = dynamic(() => import('@/components/dashboard/ProfileSettings').then(mod => mod.ProfileSettings), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Courses = dynamic(() => import('@/components/dashboard/student/Courses').then(mod => mod.Courses), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const DailyQuiz = dynamic(() => import('@/components/dashboard/student/DailyQuiz'), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const QuizGenerator = dynamic(() => import('@/components/dashboard/student/QuizGenerator'), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const DailyQuiz = dynamic(() => import('@/components/dashboard/student/DailyQuiz').then(mod => mod.DailyQuiz), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const QuizGenerator = dynamic(() => import('@/components/dashboard/student/QuizGenerator').then(mod => mod.QuizGenerator), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const MyCourses = dynamic(() => import('@/components/dashboard/student/MyCourses').then(mod => mod.MyCourses), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Chat = dynamic(() => import('@/components/dashboard/student/Chat').then(mod => mod.Chat), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
@@ -171,8 +171,6 @@ export default function StudentDashboardPage() {
             return <Courses />;
         case 'My Courses':
             return <MyCourses />;
-        case 'Messages':
-            return <Chat />;
         case 'Code Companion':
             return <CodeCompanion />;
         case 'Learning Path':
@@ -196,20 +194,28 @@ export default function StudentDashboardPage() {
   };
 
   const menuItems = [
-    { name: 'Overview', icon: LayoutDashboard, color: 'text-sky-400' },
-    { name: 'My Courses', icon: GraduationCap, color: 'text-green-400' },
-    { name: 'Browse Courses', icon: BookCopy, color: 'text-orange-400' },
-    { name: 'Messages', icon: MessageSquare, color: 'text-blue-400' },
-    { name: 'Notes', icon: NotebookText, color: 'text-amber-400' },
-    { name: 'Daily Quiz', icon: Zap, color: 'text-yellow-400' },
-    { name: 'Quiz Generator', icon: SquarePen, color: 'text-lime-400' },
-    { name: 'AI Tutor', icon: BrainCircuit, color: 'text-violet-400' },
-    { name: 'Code Companion', icon: Code, color: 'text-green-400' },
-    { name: 'Learning Path', icon: Route, color: 'text-rose-400' },
-    { name: 'PDF Summarizer', icon: FileText, color: 'text-orange-400' },
-    { name: 'Whiteboard', icon: Spline, color: 'text-blue-400' },
-    { name: 'Settings', icon: Settings, color: 'text-slate-400' },
+    { name: 'Overview', icon: LayoutDashboard, color: 'text-sky-400', href: '/dashboard/student' },
+    { name: 'My Courses', icon: GraduationCap, color: 'text-green-400', href: '#' },
+    { name: 'Browse Courses', icon: BookCopy, color: 'text-orange-400', href: '#' },
+    { name: 'Messages', icon: MessageSquare, color: 'text-blue-400', href: '/dashboard/student/messages' },
+    { name: 'Notes', icon: NotebookText, color: 'text-amber-400', href: '#' },
+    { name: 'Daily Quiz', icon: Zap, color: 'text-yellow-400', href: '#' },
+    { name: 'Quiz Generator', icon: SquarePen, color: 'text-lime-400', href: '#' },
+    { name: 'AI Tutor', icon: BrainCircuit, color: 'text-violet-400', href: '#' },
+    { name: 'Code Companion', icon: Code, color: 'text-green-400', href: '#' },
+    { name: 'Learning Path', icon: Route, color: 'text-rose-400', href: '#' },
+    { name: 'PDF Summarizer', icon: FileText, color: 'text-orange-400', href: '#' },
+    { name: 'Whiteboard', icon: Spline, color: 'text-blue-400', href: '#' },
+    { name: 'Settings', icon: Settings, color: 'text-slate-400', href: '#' },
   ];
+
+  const handleMenuClick = (componentName: string, href: string) => {
+    if (href.startsWith('/')) {
+        // External navigation handled by the browser
+    } else {
+        setActiveComponent(componentName);
+    }
+  }
 
   return (
     <SidebarProvider>
@@ -225,12 +231,22 @@ export default function StudentDashboardPage() {
             {menuItems.map(item => (
                 <SidebarMenuItem key={item.name}>
                     <SidebarMenuButton 
-                        isActive={activeComponent === item.name}
-                        onClick={() => setActiveComponent(item.name)}
+                        isActive={!item.href.startsWith('/') && activeComponent === item.name}
+                        onClick={() => handleMenuClick(item.name, item.href)}
+                        asChild={item.href.startsWith('/')}
                         className="group"
                     >
-                        <item.icon className={cn("transition-colors", item.color, activeComponent === item.name && 'text-primary-foreground')} />
-                        {item.name}
+                        {item.href.startsWith('/') ? (
+                           <a href={item.href}>
+                               <item.icon className={cn("transition-colors", item.color, activeComponent === item.name && 'text-primary-foreground')} />
+                               {item.name}
+                           </a>
+                        ) : (
+                            <>
+                                <item.icon className={cn("transition-colors", item.color, activeComponent === item.name && 'text-primary-foreground')} />
+                                {item.name}
+                            </>
+                        )}
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             ))}
