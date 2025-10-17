@@ -1,13 +1,22 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow users to read and write to their own profile picture folder.
-    // The {userId} wildcard captures the user's UID from the path.
-    // The rule ensures that the UID in the path matches the authenticated user's UID.
-    match /profile-pictures/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+    // Rules for profile pictures
+    // Allow users to read and write their own profile picture.
+    match /profile-pictures/{userId}/{fileName} {
+      allow read;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Rules for course images
+    // Allow anyone to read course images.
+    // Allow authenticated institute owners to upload images for their own courses.
+    match /course-images/{courseId}/{fileName} {
+      allow read;
+      allow create: if request.auth != null && 
+                     get(/databases/(default)/documents/courses/$(courseId)).data.instituteId == request.auth.uid;
     }
   }
 }
