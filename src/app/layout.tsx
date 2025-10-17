@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { ClientCursorEffect } from '@/components/ui/ClientCursorEffect';
-import { FirebaseProvider } from '@/firebase/provider';
 import { ClientOnly } from '@/components/ui/ClientOnly';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 import '@/app/globals.css';
 import '@tldraw/tldraw/tldraw.css';
 
@@ -29,13 +29,13 @@ export default function RootLayout({
         />
       </head>
       <body className={cn('font-body antialiased min-h-screen flex flex-col')} suppressHydrationWarning={true}>
-        <FirebaseProvider>
+        <FirebaseClientProvider>
           <ClientOnly>
             <ClientCursorEffect />
           </ClientOnly>
           {children}
           <Toaster />
-        </FirebaseProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );
