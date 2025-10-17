@@ -20,7 +20,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 const ProfileSettings = dynamic(() => import('@/components/dashboard/ProfileSettings').then(mod => mod.ProfileSettings), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const CourseManagement = dynamic(() => import('@/components/dashboard/institute/CourseManagement').then(mod => mod.CourseManagement), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const Chat = dynamic(() => import('@/components/dashboard/institute/Chat').then(mod => mod.Chat), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+
 
 const Notifications = () => {
     const { user } = useAuth();
