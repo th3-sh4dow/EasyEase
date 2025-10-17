@@ -4,8 +4,8 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from 'firebase/auth';
 import { useRouter, usePathname } from 'next/navigation';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
-import { useUser, useFirestore } from '@/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { useUser, useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 
 // --- Types ---
@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
   const firestore = useFirestore();
+  const firebaseAuth = useFirebaseAuth();
 
   const { user, initialized: authInitialized } = useUser();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -30,7 +31,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loading = !authInitialized || profileLoading;
   
   const isAuthPage = ['/login', '/signup'].includes(pathname);
-  const isDashboardPage = pathname.startsWith('/dashboard');
 
   useEffect(() => {
     if (!authInitialized) return; // Wait for Firebase Auth to initialize
@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setProfile(null);
       setProfileLoading(false);
       // If they are on a protected dashboard page, redirect them to login.
-      if (isDashboardPage) {
+      if (pathname.startsWith('/dashboard')) {
         router.replace('/login');
       }
       return;
@@ -53,25 +53,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onSnapshot(profileRef, (docSnap) => {
         if (docSnap.exists()) {
           const userProfile = docSnap.data() as UserProfile;
-          
-          if (user.photoURL && user.photoURL !== userProfile.photoURL) {
-            updateDoc(profileRef, { photoURL: user.photoURL });
-          }
-
           setProfile(userProfile);
-          
+
           // --- REDIRECTION LOGIC ---
-          if (userProfile.role) {
-            const targetDashboard = `/dashboard/${userProfile.role}`;
-            // If user is on a public page (/, /login, /signup) or the wrong dashboard, redirect them.
-            if (!pathname.startsWith(targetDashboard)) {
-              router.replace(targetDashboard);
-            }
+          const role = userProfile.role;
+          if (role) {
+              const targetDashboard = `/dashboard/${role}`;
+              // If user is on an auth page (login/signup) or not on their correct dashboard, redirect.
+              if (isAuthPage || !pathname.startsWith(targetDashboard)) {
+                  router.replace(targetDashboard);
+              }
+          } else {
+            // This case can happen temporarily during signup or if the profile is incomplete.
+            // Don't redirect, allow other parts of the app to handle it.
+            console.warn("User has a session but no role in their profile.");
           }
           
         } else {
-          // Profile doesn't exist yet, might be mid-signup. Don't redirect.
+          // Profile doesn't exist yet, might be mid-signup.
           setProfile(null);
+          // Don't redirect, this state is expected during the signup flow.
         }
         setProfileLoading(false);
     }, (error) => {
@@ -79,20 +80,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setProfile(null);
         setProfileLoading(false);
         // If there's an error, sign the user out to be safe
-        // and redirect to login.
-        if (auth) {
-            auth.signOut();
+        if (firebaseAuth) {
+            firebaseAuth.signOut();
         }
-        router.replace('/login');
     });
 
     return () => unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authInitialized, firestore, pathname, router]);
+  }, [user, authInitialized, firestore, pathname, router, isAuthPage, firebaseAuth]);
 
 
   const value = { user, profile, loading };
 
+  // Render children immediately, redirection is handled by the effect.
   return (
     <AuthContext.Provider value={value}>
         {children}
