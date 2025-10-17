@@ -143,3 +143,14 @@ export interface Message {
     createdAt: Timestamp;
     read?: boolean;
 }
+
+export interface Notification {
+    id: string;
+    userId: string; // The user who should receive the notification
+    type: 'new_enrollment' | 'new_message';
+    title: string;
+    message: string;
+    link?: string; // e.g., a link to the course or chat
+    read: boolean;
+    createdAt: Timestamp;
+}

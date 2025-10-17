@@ -11,7 +11,7 @@ import type { Course } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookCopy, FileX, GraduationCap } from 'lucide-react';
+import { BookCopy, FileX, GraduationCap, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -103,9 +103,15 @@ export function MyCourses() {
                 <Progress value={33} />
                 <p className="text-sm text-muted-foreground">33% complete</p>
               </CardContent>
-              <CardFooter className="p-4 border-t">
-                <Button asChild className="w-full">
-                    <Link href={`/dashboard/student/learn/${course.id}`}>Continue Learning</Link>
+              <CardFooter className="p-4 border-t flex items-center justify-between gap-2">
+                <Button asChild className="flex-1">
+                    <Link href={`/dashboard/student/learn/${course.id}`}>Continue</Link>
+                </Button>
+                <Button asChild variant="outline">
+                   <Link href={`/dashboard/student/messages?instituteId=${course.instituteId}`}>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Message
+                   </Link>
                 </Button>
               </CardFooter>
             </Card>

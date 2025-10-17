@@ -247,6 +247,23 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "score", "totalQuestions", "topic", "createdAt"]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a user notification.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["new_enrollment", "new_message"] },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "link": { "type": "string", "format": "uri" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "type", "title", "message", "read", "createdAt"]
     }
   },
   "auth": {
@@ -361,6 +378,16 @@
           "entityName": "Message",
           "schema": { "$ref": "#/backend/entities/Message" },
           "description": "Stores messages for a specific chat."
+        }
+      },
+      {
+        "path": "/userProfiles/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/backend/entities/Notification"
+          },
+          "description": "Stores notifications for a specific user."
         }
       }
     ],
