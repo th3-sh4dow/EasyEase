@@ -248,26 +248,29 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     const handleAuthError = (err) => {
         let message = 'An unexpected error occurred. Please try again.';
         
-        switch (err.code) {
-            case 'auth/email-already-in-use':
-                message = 'This email is already associated with an account.';
-                break;
-            case 'auth/weak-password':
-                message = 'Password should be at least 6 characters long.';
-                break;
-            case 'auth/invalid-email':
-                message = 'Please enter a valid email address.';
-                break;
-            case 'functions/internal':
-            case 'functions/unavailable':
-                 message = 'A server error occurred during signup. Please try again later.';
-                 break;
-            default:
-                if (err.message) {
-                    message = err.message;
-                }
-                break;
+        // Handle Firebase Auth specific errors
+        if (err.code) {
+            switch (err.code) {
+                case 'auth/email-already-in-use':
+                    message = 'This email is already associated with an account.';
+                    break;
+                case 'auth/weak-password':
+                    message = 'Password should be at least 6 characters long.';
+                    break;
+                case 'auth/invalid-email':
+                    message = 'Please enter a valid email address.';
+                    break;
+            }
         }
+        
+        // Handle Cloud Function specific errors (wrapped in err.details)
+        if (err.details && err.details.message) {
+            message = err.details.message;
+        } else if (err.code && err.code.startsWith('functions/')) {
+            // General function error fallback
+            message = 'A server error occurred during signup. Please try again later.';
+        }
+
         setError(message);
     }
 
@@ -285,7 +288,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             return;
         }
         if (!email || !password || !username) {
-            setError("Please fill in all fields.");
+            setError("Please fill in all required fields.");
             return;
         }
         
