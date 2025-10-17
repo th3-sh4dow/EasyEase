@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const loading = !authInitialized || profileLoading;
   
-  const isAuthPage = ['/login', '/signup'].includes(pathname);
+  const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(pathname);
   const isDashboardPage = pathname.startsWith('/dashboard');
 
   useEffect(() => {
@@ -37,48 +37,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     let unsubscribe: (() => void) | null = null;
 
-    if (!user) {
-      setProfile(null);
-      setProfileLoading(false);
-      if (isDashboardPage) {
-        router.replace('/login');
-      }
-    } else {
+    if (user) {
       setProfileLoading(true);
       const profileRef = doc(firestore, 'userProfiles', user.uid);
       
       unsubscribe = onSnapshot(profileRef, (docSnap) => {
         if (docSnap.exists()) {
-          const userProfile = docSnap.data() as UserProfile;
+          const userProfile = { id: docSnap.id, ...docSnap.data() } as UserProfile;
           setProfile(userProfile);
-          setProfileLoading(false); // Profile found, loading is done.
-
-          if (userProfile.role) {
-            const targetDashboard = `/dashboard/${userProfile.role}`;
-            // If user is on an auth page or the wrong dashboard, redirect.
-            if (isAuthPage || (isDashboardPage && !pathname.startsWith(targetDashboard))) {
-              router.replace(targetDashboard);
-            }
-          } else {
-            // Profile exists but has no role. This is an error state.
-             console.error("User profile is missing a role.");
-             if (firebaseAuth) firebaseAuth.signOut(); // Log out user to prevent being stuck
-          }
         } else {
-          // Profile doesn't exist yet. We keep listening.
-          // This handles the delay between user creation and profile creation.
+          // Profile doesn't exist yet. This can happen right after signup.
+          // We'll keep listening, but set profile to null for now.
           setProfile(null);
-          // We set loading to true to wait for the profile.
-          setProfileLoading(true); 
         }
+        setProfileLoading(false);
       }, (error) => {
         console.error("Error fetching user profile:", error);
         setProfile(null);
         setProfileLoading(false);
-        if (firebaseAuth) {
-          firebaseAuth.signOut();
-        }
+        if (firebaseAuth) firebaseAuth.signOut();
       });
+    } else {
+      // No user, not loading.
+      setProfile(null);
+      setProfileLoading(false);
     }
 
     return () => {
@@ -86,19 +68,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         unsubscribe();
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authInitialized, firestore]);
+  }, [user, authInitialized, firestore, firebaseAuth]);
 
-  // This effect handles the redirection logic separately from data fetching
+  // This effect handles all redirection logic based on auth and profile state.
   useEffect(() => {
-    if (loading) return; // Wait until loading is complete
+    // Don't redirect until auth and profile loading is complete
+    if (loading) {
+      return;
+    }
 
-    if (user && profile && profile.role) {
+    if (user && profile?.role) {
+      // User is logged in and has a profile with a role
       const targetDashboard = `/dashboard/${profile.role}`;
+      // If they are on an auth page, or a dashboard page that is not their own, redirect.
       if (isAuthPage || (isDashboardPage && !pathname.startsWith(targetDashboard))) {
         router.replace(targetDashboard);
       }
-    } else if (!user && isDashboardPage) {
+    } else if (user && !profile) {
+        // User is logged in but profile is not yet created or found.
+        // This is a transient state right after signup.
+        // We don't redirect, we wait for the listener in the first useEffect to find the profile.
+        // If they are on a dashboard page, they might see a loader or brief error until profile loads.
+    }
+    else if (!user && isDashboardPage) {
+      // User is not logged in but is trying to access a protected dashboard page.
       router.replace('/login');
     }
 
@@ -107,7 +100,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = { user, profile, loading };
 
-  // Render children immediately, redirection is handled by the effect.
   return (
     <AuthContext.Provider value={value}>
         {children}
