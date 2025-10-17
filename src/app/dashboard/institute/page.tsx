@@ -1,8 +1,9 @@
+
 'use client';
 
 import React from 'react';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { Building, LayoutDashboard, BarChart3, Users, BookCopy, Settings, BotMessageSquare } from 'lucide-react';
+import { Building, LayoutDashboard, BarChart3, Users, BookCopy, Settings, BotMessageSquare, MessageSquare } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const ProfileSettings = dynamic(() => import('@/components/dashboard/ProfileSettings').then(mod => mod.ProfileSettings), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const CourseManagement = dynamic(() => import('@/components/dashboard/institute/CourseManagement').then(mod => mod.CourseManagement), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const Chat = dynamic(() => import('@/components/dashboard/student/Chat').then(mod => mod.Chat), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 export default function InstituteDashboardPage() {
@@ -20,6 +22,7 @@ export default function InstituteDashboardPage() {
     { name: 'Overview', icon: LayoutDashboard, color: 'text-sky-400' },
     { name: 'Course Management', icon: BookCopy, color: 'text-amber-400' },
     { name: 'Student Management', icon: Users, color: 'text-blue-400' },
+    { name: 'Messages', icon: MessageSquare, color: 'text-blue-400' },
     { name: 'AI Tools', icon: BotMessageSquare, color: 'text-violet-400' },
     { name: 'Analytics', icon: BarChart3, color: 'text-rose-400' },
     { name: 'Settings', icon: Settings, color: 'text-slate-400' },
@@ -36,6 +39,8 @@ export default function InstituteDashboardPage() {
         return <ProfileSettings />;
       case 'Course Management':
         return <CourseManagement />;
+      case 'Messages':
+        return <Chat />;
       case 'Overview':
         return (
           <div className="animate-fade-in">
