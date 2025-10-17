@@ -8,25 +8,28 @@ import {
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import type { ChatMessage } from '@/lib/types';
+import type { MessageData } from '@/lib/types';
 
-const chatMessagesPath = (userId: string, sessionId: string) => `userProfiles/${userId}/chatSessions/${sessionId}/messages`;
+export const chatPath = (chatId: string) => `chats/${chatId}/messages`;
+export const INSTITUTE_SUPPORT_ID = 'institute_support'; // A static ID for institute support
 
 type NewMessageData = {
-    role: 'user' | 'model';
-    text: string;
+    senderId: string;
+    content: string;
+    contentType: 'text' | 'image' | 'file';
 }
 
 /**
- * Saves a chat message to a user's session in Firestore.
+ * Saves a chat message to a specific chat conversation.
  * This is a non-blocking operation.
  */
-export function saveChatMessage(firestore: Firestore, userId: string, sessionId: string, data: NewMessageData): void {
-  const messagesCollectionRef = collection(firestore, chatMessagesPath(userId, sessionId));
+export function saveMessage(firestore: Firestore, chatId: string, data: NewMessageData): void {
+  const messagesCollectionRef = collection(firestore, chatPath(chatId));
   
   const newMessageData = {
     ...data,
     createdAt: serverTimestamp(),
+    read: false,
   };
 
   addDoc(messagesCollectionRef, newMessageData)

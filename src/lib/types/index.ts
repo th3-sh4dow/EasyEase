@@ -126,3 +126,20 @@ export interface QuizResult {
     topic: string;
     createdAt: Timestamp;
 }
+
+export interface Chat {
+    id: string;
+    participants: string[];
+    lastMessage?: string;
+    lastMessageAt: Timestamp;
+    unreadCount: Record<string, number>;
+}
+
+export interface Message {
+    id: string;
+    senderId: string;
+    content: string;
+    contentType: 'text' | 'image' | 'file';
+    createdAt: Timestamp;
+    read?: boolean;
+}

@@ -136,7 +136,7 @@
       "required": [
         "id",
         "instituteId",
-        "name",
+        "title",
         "description"
       ]
     },
@@ -200,6 +200,38 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "role", "text", "createdAt"]
+    },
+    "Chat": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Chat",
+        "type": "object",
+        "description": "Represents a chat conversation.",
+        "properties": {
+            "id": { "type": "string" },
+            "participants": { "type": "array", "items": { "type": "string" } },
+            "lastMessage": { "type": "string" },
+            "lastMessageAt": { "type": "string", "format": "date-time" },
+            "unreadCount": {
+                "type": "object",
+                "additionalProperties": { "type": "number" }
+            }
+        },
+        "required": ["id", "participants", "lastMessageAt"]
+    },
+    "Message": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Message",
+        "type": "object",
+        "description": "Represents a message within a chat.",
+        "properties": {
+            "id": { "type": "string" },
+            "senderId": { "type": "string" },
+            "content": { "type": "string" },
+            "contentType": { "type": "string", "enum": ["text", "image", "file"] },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "read": { "type": "boolean" }
+        },
+        "required": ["id", "senderId", "content", "contentType", "createdAt"]
     },
     "QuizResult": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -312,6 +344,22 @@
                 "$ref": "#/backend/entities/QuizResult"
             },
             "description": "Stores the results of quizzes taken by a user."
+        }
+      },
+      {
+        "path": "/chats/{chatId}",
+        "definition": {
+          "entityName": "Chat",
+          "schema": { "$ref": "#/backend/entities/Chat" },
+          "description": "Stores chat conversations between users and institutes."
+        }
+      },
+      {
+        "path": "/chats/{chatId}/messages/{messageId}",
+        "definition": {
+          "entityName": "Message",
+          "schema": { "$ref": "#/backend/entities/Message" },
+          "description": "Stores messages for a specific chat."
         }
       }
     ],

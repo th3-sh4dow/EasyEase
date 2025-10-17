@@ -1,11 +1,10 @@
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline, Settings, BookCopy, Zap, SquarePen, Flame, CheckCircle, BookOpen } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline, Settings, BookCopy, Zap, SquarePen, Flame, CheckCircle, BookOpen, MessageSquare } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
@@ -26,9 +25,10 @@ const PdfSummarizer = dynamic(() => import('@/components/dashboard/PdfSummarizer
 const AiTutor = dynamic(() => import('@/components/dashboard/AiTutor').then(mod => mod.AiTutor), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const ProfileSettings = dynamic(() => import('@/components/dashboard/ProfileSettings').then(mod => mod.ProfileSettings), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Courses = dynamic(() => import('@/components/dashboard/student/Courses').then(mod => mod.Courses), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const DailyQuiz = dynamic(() => import('@/components/dashboard/student/DailyQuiz'), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const QuizGenerator = dynamic(() => import('@/components/dashboard/student/QuizGenerator'), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const DailyQuiz = dynamic(() => import('@/components/dashboard/student/DailyQuiz').then(mod => mod.default), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const QuizGenerator = dynamic(() => import('@/components/dashboard/student/QuizGenerator').then(mod => mod.default), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const MyCourses = dynamic(() => import('@/components/dashboard/student/MyCourses').then(mod => mod.MyCourses), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const Chat = dynamic(() => import('@/components/dashboard/student/Chat').then(mod => mod.Chat), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: string) => void }) => {
@@ -170,6 +170,8 @@ export default function StudentDashboardPage() {
             return <Courses />;
         case 'My Courses':
             return <MyCourses />;
+        case 'Messages':
+            return <Chat />;
         case 'Code Companion':
             return <CodeCompanion />;
         case 'Learning Path':
@@ -196,6 +198,7 @@ export default function StudentDashboardPage() {
     { name: 'Overview', icon: LayoutDashboard, color: 'text-sky-400' },
     { name: 'My Courses', icon: GraduationCap, color: 'text-green-400' },
     { name: 'Browse Courses', icon: BookCopy, color: 'text-orange-400' },
+    { name: 'Messages', icon: MessageSquare, color: 'text-blue-400' },
     { name: 'Notes', icon: NotebookText, color: 'text-amber-400' },
     { name: 'Daily Quiz', icon: Zap, color: 'text-yellow-400' },
     { name: 'Quiz Generator', icon: SquarePen, color: 'text-lime-400' },
@@ -245,5 +248,3 @@ export default function StudentDashboardPage() {
     </SidebarProvider>
   );
 }
-
-    
