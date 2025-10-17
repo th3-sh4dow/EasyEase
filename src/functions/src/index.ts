@@ -95,7 +95,7 @@ export const setInitialUserRole = onCall(async (request: { data: SetInitialUserR
     // Idempotency: If profile already exists, just ensure claims are set and return.
     if (profileDoc.exists) {
         logger.warn(`Profile for user ${uid} already exists. Ensuring claim is set.`);
-        await admin.auth().setCustomUserClaims(uid, { role: role });
+        await admin.auth().setCustomUserClaims(uid, { role: profileDoc.data()?.role || role });
         return { success: true, alreadyExists: true, message: 'Profile already exists.' };
     }
     
