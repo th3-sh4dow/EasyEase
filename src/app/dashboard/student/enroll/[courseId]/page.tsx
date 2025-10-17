@@ -1,10 +1,11 @@
+
 'use client';
 
 import React from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import type { Course } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -12,14 +13,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { ArrowLeft, BookCopy, Check, DollarSign, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { arrayUnion, updateDoc } from 'firebase/firestore';
 
 
 export default function EnrollPage() {
     const { courseId } = useParams();
     const router = useRouter();
     const firestore = useFirestore();
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
     const { toast } = useToast();
 
     const courseRef = useMemoFirebase(() => {
@@ -30,15 +30,22 @@ export default function EnrollPage() {
     const { data: course, isLoading } = useDoc<Course>(courseRef);
 
     const handleEnroll = async () => {
-        if (!user || !course || !firestore) return;
+        if (!user || !profile || !course || !firestore) return;
 
         // In a real app, this would trigger a payment flow if course.price > 0
         
         const courseDocRef = doc(firestore, 'courses', course.id);
+        const userProfileRef = doc(firestore, 'userProfiles', user.uid);
         
         try {
+            // Add student to course
             await updateDoc(courseDocRef, {
                 studentIds: arrayUnion(user.uid)
+            });
+
+            // Add course to student's profile
+            await updateDoc(userProfileRef, {
+                enrolledCourseIds: arrayUnion(course.id)
             });
 
             toast({
@@ -123,12 +130,12 @@ export default function EnrollPage() {
                         </ul>
                     </CardContent>
                     <CardFooter className="flex-col gap-4">
-                        <Button size="lg" className="w-full" onClick={handleEnroll}>
-                             <DollarSign className="mr-2 h-5 w-5" /> Enroll Now
+                        <Button size="lg" className="w-full" onClick={handleEnroll} disabled={profile?.enrolledCourseIds?.includes(course.id)}>
+                            {profile?.enrolledCourseIds?.includes(course.id) ? 'Already Enrolled' : <><DollarSign className="mr-2 h-5 w-5" /> Enroll Now</>}
                         </Button>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <Lock className="h-3 w-3" />
-                            <p>Secure payment with Stripe</p>
+                            <p>Secure transaction</p>
                         </div>
                     </CardFooter>
                 </Card>

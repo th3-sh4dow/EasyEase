@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from 'firebase/auth';
 import { useRouter, usePathname } from 'next/navigation';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { useUser, useFirestore } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 
@@ -32,32 +32,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isPublicPage = ['/login', '/signup', '/'].includes(pathname);
 
   useEffect(() => {
-    // If auth isn't initialized, do nothing.
     if (!authInitialized || !firestore) {
       return;
     }
 
-    // If there's no user, we are done loading profile.
     if (!user) {
       setProfile(null);
       setProfileLoading(false);
-      // If user is not logged in and is on a protected dashboard page, redirect to login.
       if (!isPublicPage) {
         router.replace('/login');
       }
       return;
     }
     
-    // User is logged in, but we are still waiting for profile.
     setProfileLoading(true);
     const profileRef = doc(firestore, 'userProfiles', user.uid);
     
     const unsubscribe = onSnapshot(profileRef, (docSnap) => {
         if (docSnap.exists()) {
           const userProfile = docSnap.data() as UserProfile;
+          
+          if (user.photoURL && user.photoURL !== userProfile.photoURL) {
+            updateDoc(profileRef, { photoURL: user.photoURL });
+            userProfile.photoURL = user.photoURL;
+          }
+
           setProfile(userProfile);
           
-          // Profile is loaded, now we can redirect if needed.
           if (userProfile.role && !pathname.startsWith('/dashboard')) {
             const targetDashboard = `/dashboard/${userProfile.role}`;
              if (pathname !== targetDashboard) {
@@ -65,8 +66,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
              }
           }
         } else {
-          // This case happens right after signup, before the cloud function runs.
-          // The signup form now handles redirection, so we can just wait.
           setProfile(null);
         }
         setProfileLoading(false);

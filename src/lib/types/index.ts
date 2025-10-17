@@ -1,3 +1,4 @@
+
 'use client';
 
 import { z } from 'zod';
@@ -13,6 +14,7 @@ export interface UserProfile {
   role: 'student' | 'institute' | 'admin';
   createdAt: Timestamp;
   instituteId?: string; // ID of the institute the user belongs to
+  enrolledCourseIds?: string[];
 }
 
 export interface Institute {
