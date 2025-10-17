@@ -14,9 +14,12 @@ setGlobalOptions({ maxInstances: 10 });
 const generateUsername = (email: string | undefined): string => {
     if (!email) {
         // fallback for users without email, e.g. anonymous auth
-        return `user_${Math.random().toString(36).substring(2, 10)}`;
+        return `user_${Date.now()}`;
     }
-    return email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '') + Math.floor(Math.random() * 100);
+    // Combine part of the email with a timestamp for uniqueness
+    const emailPart = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+    const timestampPart = Date.now().toString().slice(-5);
+    return `${emailPart}${timestampPart}`;
 }
 
 /**
