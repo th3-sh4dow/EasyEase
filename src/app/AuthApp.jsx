@@ -152,13 +152,17 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
     const handleAuthError = (err) => {
         let message = 'An unexpected error occurred.';
         switch (err.code) {
-            case 'auth/user-not-found':
             case 'auth/invalid-credential':
-            case 'auth/invalid-email':
+                message = 'Invalid credentials. Please check your email and password.';
+                break;
+            case 'auth/user-not-found':
                 message = 'No account found with that email address.';
                 break;
             case 'auth/wrong-password':
                 message = 'Incorrect password. Please try again.';
+                break;
+            case 'auth/invalid-email':
+                message = 'Please enter a valid email address.';
                 break;
             case 'auth/too-many-requests':
                 message = 'Access temporarily disabled due to too many failed login attempts. Please reset your password or try again later.';
