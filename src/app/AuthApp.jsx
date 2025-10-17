@@ -248,7 +248,6 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     const handleAuthError = (err) => {
         let message = 'An unexpected error occurred. Please try again.';
         
-        // Handle Firebase Auth specific errors
         if (err.code) {
             switch (err.code) {
                 case 'auth/email-already-in-use':
@@ -263,11 +262,9 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             }
         }
         
-        // Handle Cloud Function specific errors (wrapped in err.details)
         if (err.details && err.details.message) {
             message = err.details.message;
         } else if (err.code && err.code.startsWith('functions/')) {
-            // General function error fallback
             message = 'A server error occurred during signup. Please try again later.';
         }
 
@@ -298,16 +295,16 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
-            // Call the cloud function to set the user's role and create their profile.
             const functions = getFunctions(auth.app);
             const setInitialUserRole = httpsCallable(functions, 'setInitialUserRole');
             await setInitialUserRole({ uid: user.uid, role: role, email: user.email, username: username });
 
-            // Send verification email
             await sendEmailVerification(user);
             
-            setSuccessMessage('Account created! A verification link has been sent to your email. You will be redirected shortly.');
-            // The AuthProvider will handle the redirect to the correct dashboard.
+            setSuccessMessage('Account created! A verification link has been sent to your email. You can now log in.');
+            setTimeout(() => {
+                setAuthView('login');
+            }, 3000);
             
         } catch (err) {
             handleAuthError(err);
@@ -487,3 +484,5 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
+
+    
