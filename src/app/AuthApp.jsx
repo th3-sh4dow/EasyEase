@@ -294,17 +294,20 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
-            await sendEmailVerification(user);
-
+            // Call the cloud function to set the user's role and create their profile.
             const functions = getFunctions(auth.app);
             const setInitialUserRole = httpsCallable(functions, 'setInitialUserRole');
             await setInitialUserRole({ uid: user.uid, role: role, email: user.email });
+
+            // Send verification email
+            await sendEmailVerification(user);
             
             setSuccessMessage('Account created! A verification link has been sent to your email. You will be redirected shortly.');
             // The AuthProvider will handle the redirect to the correct dashboard.
             
         } catch (err) {
             handleAuthError(err);
+        } finally {
             setIsLoading(false);
         }
     };
@@ -471,3 +474,5 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
+
+    
