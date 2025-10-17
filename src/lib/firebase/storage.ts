@@ -31,3 +31,25 @@ export async function uploadProfilePicture(userId: string, file: File): Promise<
         throw error;
     }
 }
+
+/**
+ * Uploads a course image to Firebase Storage.
+ *
+ * @param courseId - The ID of the course.
+ * @param file - The image file to upload.
+ * @returns A promise that resolves with the public download URL of the uploaded image.
+ */
+export async function uploadCourseImage(courseId: string, file: File): Promise<string> {
+    const { app } = initializeFirebase();
+    const storage = getStorage(app);
+    const storageRef = ref(storage, `course-images/${courseId}/${file.name}`);
+
+    try {
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return downloadURL;
+    } catch (error) {
+        console.error("Course image upload failed:", error);
+        throw error;
+    }
+}

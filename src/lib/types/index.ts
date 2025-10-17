@@ -40,6 +40,7 @@ export interface Course {
   instituteId: string;
   title: string;
   description: string;
+  imageUrl?: string;
   studentIds: string[];
   published: boolean;
   createdAt: Timestamp;

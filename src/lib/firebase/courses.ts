@@ -23,6 +23,7 @@ export function createCourse(firestore: Firestore, instituteId: string, data: Pi
     instituteId,
     studentIds: [],
     published: false,
+    imageUrl: '',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -42,7 +43,7 @@ export function createCourse(firestore: Firestore, instituteId: string, data: Pi
  * Updates an existing course.
  * This is a non-blocking operation.
  */
-export function updateCourse(firestore: Firestore, courseId: string, data: Partial<Pick<Course, 'title' | 'description' | 'published'>>): void {
+export function updateCourse(firestore: Firestore, courseId: string, data: Partial<Pick<Course, 'title' | 'description' | 'published' | 'imageUrl'>>): void {
   const courseRef = doc(firestore, 'courses', courseId);
   const updateData = {
     ...data,

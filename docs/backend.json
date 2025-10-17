@@ -103,6 +103,11 @@
           "type": "string",
           "description": "Description of the course."
         },
+        "imageUrl": {
+            "type": "string",
+            "description": "URL of the course's cover image.",
+            "format": "uri"
+        },
         "studentIds": {
           "type": "array",
           "description": "References to UserProfiles (as students) enrolled in the course. (Relationship: UserProfile N:N Course)",
@@ -178,6 +183,20 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "role", "text", "createdAt"]
+    },
+    "QuizResult": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "QuizResult",
+      "type": "object",
+      "description": "Represents the result of a single quiz taken by a student.",
+      "properties": {
+        "id": { "type": "string" },
+        "score": { "type": "number" },
+        "totalQuestions": { "type": "number" },
+        "topic": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "score", "totalQuestions", "topic", "createdAt"]
     }
   },
   "auth": {
@@ -219,7 +238,7 @@
         }
       },
       {
-        "path": "/users/{userId}/notes/{noteId}",
+        "path": "/userProfiles/{userId}/notes/{noteId}",
         "definition": {
           "entityName": "Note",
           "schema": {
@@ -266,6 +285,16 @@
                 "$ref": "#/backend/entities/ChatMessage"
             },
             "description": "Stores messages for a specific chat session belonging to a user."
+        }
+      },
+      {
+        "path": "/userProfiles/{userId}/quizResults/{resultId}",
+        "definition": {
+            "entityName": "QuizResult",
+            "schema": {
+                "$ref": "#/backend/entities/QuizResult"
+            },
+            "description": "Stores the results of quizzes taken by a user."
         }
       }
     ],
