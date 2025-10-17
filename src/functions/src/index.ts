@@ -92,10 +92,9 @@ export const setInitialUserRole = onCall(async (request: { data: SetInitialUserR
   try {
     const profileDoc = await userProfileRef.get();
     
-    // Idempotency: If profile already exists, just ensure claims are set and return.
+    // Idempotency: If profile already exists, just return.
     if (profileDoc.exists) {
-        logger.warn(`Profile for user ${uid} already exists. Ensuring claim is set.`);
-        await admin.auth().setCustomUserClaims(uid, { role: profileDoc.data()?.role || role });
+        logger.warn(`Profile for user ${uid} already exists.`);
         return { success: true, alreadyExists: true, message: 'Profile already exists.' };
     }
     
@@ -118,26 +117,14 @@ export const setInitialUserRole = onCall(async (request: { data: SetInitialUserR
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    // Use a batch write for atomicity (good practice)
-    const batch = admin.firestore().batch();
-    batch.set(userProfileRef, userProfile);
-    await batch.commit();
-
-    // Set custom claims AFTER the profile is successfully created.
-    await admin.auth().setCustomUserClaims(uid, { role: role });
+    // Create the user profile document in Firestore
+    await userProfileRef.set(userProfile);
     
     logger.info(`Successfully initialized user ${uid} with role '${role}' and username '${finalUsername}'.`);
     return { success: true, alreadyExists: false, message: `User initialized with role '${role}'.` };
 
   } catch (error: any) {
     logger.error(`Error initializing user ${uid}:`, error);
-
-    // Cleanup: If profile was created but setting claims failed, delete the user profile.
-    const doc = await userProfileRef.get();
-    if (doc.exists) {
-        await userProfileRef.delete();
-        logger.warn(`Cleaned up partially created profile for user ${uid}.`);
-    }
 
     if (error instanceof HttpsError) {
         throw error;
