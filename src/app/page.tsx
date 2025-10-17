@@ -12,10 +12,9 @@ export default function Home() {
   // The AuthProvider is responsible for redirection.
   // This page will just show the public landing content.
   // If the user is logged in, they will be redirected away by the provider.
-  if (loading) {
-    // While the auth state is loading, it's good practice to show a loader
-    // to prevent a flash of the landing page for authenticated users who are
-    // about to be redirected.
+  // While the auth state is loading, show a loader to prevent a flash
+  // of the landing page for authenticated users who are about to be redirected.
+  if (loading || user) {
      return (
         <div className="min-h-screen flex items-center justify-center bg-background text-lg">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
@@ -23,8 +22,7 @@ export default function Home() {
       );
   }
 
-  // If loading is finished, always attempt to show the public landing page.
-  // The AuthProvider will handle redirecting authenticated users away.
+  // If loading is finished and there is no user, show the public landing page.
   return (
     <>
       <Header />
