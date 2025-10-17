@@ -31,63 +31,60 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loading = !authInitialized || profileLoading;
   
   const isAuthPage = ['/login', '/signup'].includes(pathname);
+  const isDashboardPage = pathname.startsWith('/dashboard');
 
   useEffect(() => {
-    if (!authInitialized) return; // Wait for Firebase Auth to initialize
+    if (!authInitialized || !firestore) return;
+
+    let unsubscribe: (() => void) | null = null;
 
     if (!user) {
-      // User is not logged in.
       setProfile(null);
       setProfileLoading(false);
-      // If they are on a protected dashboard page, redirect them to login.
-      if (pathname.startsWith('/dashboard')) {
+      if (isDashboardPage) {
         router.replace('/login');
       }
-      return;
-    }
-
-    // User is logged in, listen for profile changes
-    setProfileLoading(true);
-    const profileRef = doc(firestore, 'userProfiles', user.uid);
-    
-    const unsubscribe = onSnapshot(profileRef, (docSnap) => {
+    } else {
+      setProfileLoading(true);
+      const profileRef = doc(firestore, 'userProfiles', user.uid);
+      
+      unsubscribe = onSnapshot(profileRef, (docSnap) => {
         if (docSnap.exists()) {
           const userProfile = docSnap.data() as UserProfile;
           setProfile(userProfile);
 
-          // --- REDIRECTION LOGIC ---
-          const role = userProfile.role;
-          if (role) {
-              const targetDashboard = `/dashboard/${role}`;
-              // If user is on an auth page (login/signup) or not on their correct dashboard, redirect.
-              if (isAuthPage || !pathname.startsWith(targetDashboard)) {
-                  router.replace(targetDashboard);
-              }
-          } else {
-            // This case can happen temporarily during signup or if the profile is incomplete.
-            // Don't redirect, allow other parts of the app to handle it.
-            console.warn("User has a session but no role in their profile.");
+          if (userProfile.role) {
+            const targetDashboard = `/dashboard/${userProfile.role}`;
+            // If user is on an auth page or the wrong dashboard, redirect.
+            if (isAuthPage || (isDashboardPage && !pathname.startsWith(targetDashboard))) {
+              router.replace(targetDashboard);
+            }
           }
-          
+          setProfileLoading(false);
         } else {
-          // Profile doesn't exist yet, might be mid-signup.
+          // Profile doesn't exist yet, this can happen during signup.
+          // We keep listening. If it doesn't appear after a while, there might be an issue.
+          // For now, we just indicate we are still waiting for the profile.
           setProfile(null);
-          // Don't redirect, this state is expected during the signup flow.
+          setProfileLoading(true); // Keep loading until profile is found or timeout
         }
-        setProfileLoading(false);
-    }, (error) => {
+      }, (error) => {
         console.error("Error fetching user profile:", error);
         setProfile(null);
         setProfileLoading(false);
-        // If there's an error, sign the user out to be safe
         if (firebaseAuth) {
-            firebaseAuth.signOut();
+          firebaseAuth.signOut();
         }
-    });
+      });
+    }
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authInitialized, firestore, pathname, router, isAuthPage, firebaseAuth]);
+  }, [user, authInitialized, firestore, pathname, router, firebaseAuth]);
 
 
   const value = { user, profile, loading };
