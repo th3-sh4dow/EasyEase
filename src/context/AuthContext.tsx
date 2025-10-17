@@ -66,7 +66,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // We keep listening. If it doesn't appear after a while, there might be an issue.
           // For now, we just indicate we are still waiting for the profile.
           setProfile(null);
-          setProfileLoading(true); // Keep loading until profile is found or timeout
+          // Keep loading true, but maybe with a timeout in a real app
+          setProfileLoading(true); 
         }
       }, (error) => {
         console.error("Error fetching user profile:", error);
