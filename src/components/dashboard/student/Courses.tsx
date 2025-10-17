@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Course } from '@/lib/types';
@@ -54,14 +55,17 @@ export function Courses() {
       {isLoading && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {[...Array(8)].map((_, i) => (
-            <Card key={i}>
+             <Card key={i} className="flex flex-col">
+              <Skeleton className="h-40 w-full" />
               <CardHeader>
                 <Skeleton className="h-6 w-3/4" />
                 <Skeleton className="h-4 w-full mt-2" />
-                 <Skeleton className="h-4 w-1/2 mt-1" />
               </CardHeader>
+               <CardContent className="flex-1">
+                 <Skeleton className="h-4 w-2/4" />
+               </CardContent>
               <CardFooter>
-                <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
               </CardFooter>
             </Card>
           ))}
@@ -71,10 +75,19 @@ export function Courses() {
       {!isLoading && filteredCourses.length > 0 && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredCourses.map((course, index) => (
-            <Card key={course.id} className={cn("flex flex-col transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-in")} style={{ animationDelay: `${index * 50}ms` }}>
+            <Card key={course.id} className={cn("flex flex-col transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-in overflow-hidden border-border/50 hover:border-primary/50")} style={{ animationDelay: `${index * 50}ms` }}>
+              <div className="relative aspect-video bg-muted/50">
+                {course.imageUrl ? (
+                  <Image src={course.imageUrl} alt={course.title} layout="fill" objectFit="cover" />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <BookCopy className="w-12 h-12 text-muted-foreground/30" />
+                  </div>
+                )}
+              </div>
               <CardHeader>
-                <CardTitle>{course.title}</CardTitle>
-                <CardDescription className="line-clamp-3 h-[60px]">{course.description}</CardDescription>
+                <CardTitle className="line-clamp-2 leading-tight h-14">{course.title}</CardTitle>
+                <CardDescription className="line-clamp-3 h-[60px] pt-1">{course.description}</CardDescription>
               </CardHeader>
               <CardContent className="flex-1" />
               <CardFooter>
