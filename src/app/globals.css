@@ -2,15 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'Inter', sans-serif;
-  cursor: none;
-}
-
-button, a, [role="button"], input, select, textarea {
-  cursor: none;
-}
-
 @layer base {
   :root {
     --background: 240 10% 3.9%;
@@ -90,30 +81,32 @@ button, a, [role="button"], input, select, textarea {
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    cursor: none;
+  }
+  button, a, [role="button"], input, select, textarea {
+    cursor: none;
   }
 }
 
 @layer components {
   /* Enhanced Scrollbar Styling */
-  [data-sidebar='content'], [data-main-scroll] {
+  html {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--primary) / 0.5) transparent;
   }
 
-  [data-sidebar='content']::-webkit-scrollbar, 
-  [data-main-scroll]::-webkit-scrollbar {
+  html::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
 
-  [data-sidebar='content']::-webkit-scrollbar-track, 
-  [data-main-scroll]::-webkit-scrollbar-track {
+  html::-webkit-scrollbar-track {
     background-color: hsl(var(--muted) / 0.1);
     border-radius: 4px;
   }
 
-  [data-sidebar='content']::-webkit-scrollbar-thumb, 
-  [data-main-scroll]::-webkit-scrollbar-thumb {
+  html::-webkit-scrollbar-thumb {
     background-color: hsl(var(--primary) / 0.3);
     border-radius: 4px;
     border: 2px solid transparent;
@@ -121,13 +114,17 @@ button, a, [role="button"], input, select, textarea {
     transition: background-color 0.3s;
   }
 
-  [data-sidebar='content']:hover::-webkit-scrollbar-thumb, 
-  [data-main-scroll]:hover::-webkit-scrollbar-thumb {
+  html:hover::-webkit-scrollbar-thumb {
     background-color: hsl(var(--primary) / 0.5);
   }
 
-   [data-sidebar='content']::-webkit-scrollbar-thumb:hover, 
-  [data-main-scroll]::-webkit-scrollbar-thumb:hover {
+  html::-webkit-scrollbar-thumb:hover {
      background-color: hsl(var(--primary) / 0.7);
    }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+  }
 }
