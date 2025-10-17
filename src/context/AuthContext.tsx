@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -52,6 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (docSnap.exists()) {
           const userProfile = docSnap.data() as UserProfile;
           setProfile(userProfile);
+          setProfileLoading(false); // Profile found, loading is done.
 
           if (userProfile.role) {
             const targetDashboard = `/dashboard/${userProfile.role}`;
@@ -59,14 +59,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (isAuthPage || (isDashboardPage && !pathname.startsWith(targetDashboard))) {
               router.replace(targetDashboard);
             }
+          } else {
+            // Profile exists but has no role. This is an error state.
+             console.error("User profile is missing a role.");
+             if (firebaseAuth) firebaseAuth.signOut(); // Log out user to prevent being stuck
           }
-          setProfileLoading(false);
         } else {
-          // Profile doesn't exist yet, this can happen during signup.
-          // We keep listening. If it doesn't appear after a while, there might be an issue.
-          // For now, we just indicate we are still waiting for the profile.
+          // Profile doesn't exist yet. We keep listening.
+          // This handles the delay between user creation and profile creation.
           setProfile(null);
-          // Keep loading true, but maybe with a timeout in a real app
+          // We set loading to true to wait for the profile.
           setProfileLoading(true); 
         }
       }, (error) => {
@@ -85,7 +87,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authInitialized, firestore, pathname, router, firebaseAuth]);
+  }, [user, authInitialized, firestore]);
+
+  // This effect handles the redirection logic separately from data fetching
+  useEffect(() => {
+    if (loading) return; // Wait until loading is complete
+
+    if (user && profile && profile.role) {
+      const targetDashboard = `/dashboard/${profile.role}`;
+      if (isAuthPage || (isDashboardPage && !pathname.startsWith(targetDashboard))) {
+        router.replace(targetDashboard);
+      }
+    } else if (!user && isDashboardPage) {
+      router.replace('/login');
+    }
+
+  }, [user, profile, loading, pathname, isAuthPage, isDashboardPage, router]);
 
 
   const value = { user, profile, loading };
