@@ -41,6 +41,8 @@ export interface Course {
   title: string;
   description: string;
   imageUrl?: string;
+  price?: number;
+  currency?: string;
   studentIds: string[];
   published: boolean;
   createdAt: Timestamp;

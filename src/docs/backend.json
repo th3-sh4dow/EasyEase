@@ -103,6 +103,19 @@
           "type": "string",
           "description": "Description of the course."
         },
+        "imageUrl": {
+            "type": "string",
+            "description": "URL of the course's cover image.",
+            "format": "uri"
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the course."
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency of the course price (e.g., USD, EUR)."
+        },
         "studentIds": {
           "type": "array",
           "description": "References to UserProfiles (as students) enrolled in the course. (Relationship: UserProfile N:N Course)",

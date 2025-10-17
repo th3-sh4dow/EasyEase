@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, BookCopy, Users, Edit, MoreVertical, Trash2, Loader2, Upload } from 'lucide-react';
+import { PlusCircle, BookCopy, Users, Edit, MoreVertical, Trash2, Loader2, Upload, DollarSign } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { createCourse, updateCourse } from '@/lib/firebase/courses';
@@ -32,6 +32,7 @@ export function CourseManagement() {
   const [isUploading, setIsUploading] = useState<string | null>(null); // Track uploading state per courseId
   const [newCourseTitle, setNewCourseTitle] = useState('');
   const [newCourseDescription, setNewCourseDescription] = useState('');
+  const [newCoursePrice, setNewCoursePrice] = useState<number | ''>('');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
 
@@ -49,9 +50,11 @@ export function CourseManagement() {
       await createCourse(firestore, user.uid, {
         title: newCourseTitle,
         description: newCourseDescription,
+        price: Number(newCoursePrice) || 0,
       });
       setNewCourseTitle('');
       setNewCourseDescription('');
+      setNewCoursePrice('');
       setIsNewCourseDialogOpen(false);
     } catch (error) {
       console.error("Failed to create course:", error);
@@ -134,6 +137,10 @@ export function CourseManagement() {
                 <Label htmlFor="description" className="text-right">Description</Label>
                 <Textarea id="description" value={newCourseDescription} onChange={(e) => setNewCourseDescription(e.target.value)} className="col-span-3" placeholder="A brief summary of the course..." />
               </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="price" className="text-right">Price (USD)</Label>
+                <Input id="price" type="number" value={newCoursePrice} onChange={(e) => setNewCoursePrice(e.target.value === '' ? '' : Number(e.target.value))} className="col-span-3" placeholder="e.g., 99.99" />
+              </div>
             </div>
             <DialogFooter>
               <DialogClose asChild><Button variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
@@ -187,8 +194,16 @@ export function CourseManagement() {
                 </div>
                 <CardHeader>
                   <div className="flex justify-between items-start">
-                      <div className="flex items-start gap-4">
+                      <div className="flex flex-col">
                         <CardTitle className="leading-tight">{course.title}</CardTitle>
+                        {course.price && course.price > 0 ? (
+                           <div className="flex items-center gap-1 text-lg font-semibold text-green-400 mt-1">
+                             <DollarSign className="h-5 w-5" />
+                             <span>{course.price.toFixed(2)}</span>
+                           </div>
+                         ) : (
+                           <div className="text-lg font-semibold text-green-400 mt-1">Free</div>
+                         )}
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -203,7 +218,7 @@ export function CourseManagement() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                   </div>
-                  <CardDescription className="line-clamp-2">{course.description}</CardDescription>
+                  <CardDescription className="line-clamp-2 pt-1">{course.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1">
                   <div className="flex items-center text-sm text-muted-foreground">

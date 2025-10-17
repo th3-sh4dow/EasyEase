@@ -16,7 +16,7 @@ import type { Course } from '@/lib/types';
  * Creates a new course for an institute.
  * This is a non-blocking operation.
  */
-export function createCourse(firestore: Firestore, instituteId: string, data: Pick<Course, 'title' | 'description'>): void {
+export function createCourse(firestore: Firestore, instituteId: string, data: Pick<Course, 'title' | 'description' | 'price'>): void {
   const coursesCollectionRef = collection(firestore, 'courses');
   const newCourseData = {
     ...data,
@@ -24,6 +24,7 @@ export function createCourse(firestore: Firestore, instituteId: string, data: Pi
     studentIds: [],
     published: false,
     imageUrl: '',
+    currency: data.price ? 'USD' : '',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -43,7 +44,7 @@ export function createCourse(firestore: Firestore, instituteId: string, data: Pi
  * Updates an existing course.
  * This is a non-blocking operation.
  */
-export function updateCourse(firestore: Firestore, courseId: string, data: Partial<Pick<Course, 'title' | 'description' | 'published' | 'imageUrl'>>): void {
+export function updateCourse(firestore: Firestore, courseId: string, data: Partial<Pick<Course, 'title' | 'description' | 'published' | 'imageUrl' | 'price' | 'currency'>>): void {
   const courseRef = doc(firestore, 'courses', courseId);
   const updateData = {
     ...data,

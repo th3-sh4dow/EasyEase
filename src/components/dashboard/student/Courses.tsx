@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
@@ -9,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookCopy, Search, FileX } from 'lucide-react';
+import { BookCopy, Search, FileX, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function Courses() {
@@ -75,7 +76,7 @@ export function Courses() {
       {!isLoading && filteredCourses.length > 0 && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredCourses.map((course, index) => (
-            <Card key={course.id} className={cn("flex flex-col transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-in overflow-hidden border-border/50 hover:border-primary/50")} style={{ animationDelay: `${index * 50}ms` }}>
+            <Card key={course.id} className={cn("flex flex-col transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-fade-in overflow-hidden border-border/50 hover:border-primary/50")}>
               <div className="relative aspect-video bg-muted/50">
                 {course.imageUrl ? (
                   <Image src={course.imageUrl} alt={course.title} layout="fill" objectFit="cover" />
@@ -89,9 +90,20 @@ export function Courses() {
                 <CardTitle className="line-clamp-2 leading-tight h-14">{course.title}</CardTitle>
                 <CardDescription className="line-clamp-3 h-[60px] pt-1">{course.description}</CardDescription>
               </CardHeader>
-              <CardContent className="flex-1" />
+              <CardContent className="flex-1">
+                  {course.price && course.price > 0 ? (
+                     <div className="flex items-center gap-1 text-2xl font-bold text-green-400">
+                       <DollarSign className="h-6 w-6" />
+                       <span>{course.price.toFixed(2)}</span>
+                     </div>
+                   ) : (
+                     <div className="text-2xl font-bold text-green-400">Free</div>
+                   )}
+              </CardContent>
               <CardFooter>
-                <Button className="w-full">Enroll Now</Button>
+                <Button asChild className="w-full">
+                    <Link href={`/dashboard/student/enroll/${course.id}`}>Enroll Now</Link>
+                </Button>
               </CardFooter>
             </Card>
           ))}
