@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, User as UserIcon, Building, MessageSquare } from 'lucide-react';
+import { Send, User as UserIcon, Building, MessageSquare, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message, Chat, UserProfile } from '@/lib/types';
 import { saveMessage, getChatId } from '@/lib/firebase/chat';
@@ -100,7 +100,7 @@ export function Chat() {
     if (names.length > 1 && names[names.length - 1]) {
         return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
     }
-    return name[0].toUpperCase();
+    return name[0]?.toUpperCase() || 'U';
   };
 
   const instituteName = activeInstitute?.username || 'Institute';
@@ -192,7 +192,7 @@ export function Chat() {
                     onClick={handleSend}
                     disabled={!input.trim()}
                 >
-                    <Send className="w-4 h-4" />
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </Button>
                 </div>
             </div>

@@ -1,12 +1,17 @@
 
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline, Settings, BookCopy, Zap, SquarePen, Flame, CheckCircle, BookOpen, MessageSquare } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline, Settings, BookCopy, Zap, SquarePen, Flame, CheckCircle, BookOpen, MessageSquare, Loader2 } from 'lucide-react';
 import { UserProfile } from '@/components/ui/user-profile';
 import { cn } from '@/lib/utils';
-import { Chat } from '@/components/dashboard/student/Chat';
+import dynamic from 'next/dynamic';
+
+const MessagesContent = dynamic(() => import('@/components/dashboard/student/MessagesContent').then(mod => mod.MessagesContent), {
+  ssr: false,
+  loading: () => <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>
+});
 
 export default function StudentMessagesPage() {
   
@@ -59,7 +64,9 @@ export default function StudentMessagesPage() {
       </Sidebar>
       <SidebarInset>
         <main className="p-8 h-full overflow-y-auto" data-main-scroll>
-            <Chat />
+          <Suspense fallback={<div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <MessagesContent />
+          </Suspense>
         </main>
       </SidebarInset>
     </SidebarProvider>
