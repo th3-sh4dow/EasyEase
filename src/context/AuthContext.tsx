@@ -33,7 +33,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isDashboardPage = pathname.startsWith('/dashboard');
 
   useEffect(() => {
-    if (!authInitialized || !firestore) return;
+    if (!authInitialized || !firestore) {
+      if(!authInitialized) {
+        setProfileLoading(true);
+      }
+      return;
+    };
 
     let unsubscribe: (() => void) | null = null;
 
