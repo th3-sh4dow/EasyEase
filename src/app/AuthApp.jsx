@@ -251,25 +251,18 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     const handleAuthError = (err) => {
         let message = 'An unexpected error occurred. Please try again.';
         
-        if (err.code) {
-            switch (err.code) {
-                case 'auth/email-already-in-use':
-                    message = 'This email is already associated with an account.';
-                    break;
-                case 'auth/weak-password':
-                    message = 'Password should be at least 6 characters long.';
-                    break;
-                case 'auth/invalid-email':
-                    message = 'Please enter a valid email address.';
-                    break;
-                 case 'functions/already-exists':
-                    message = 'A user with that username or email already has a profile.';
-                    break;
-                default:
-                    message = err.message || message;
-            }
-        } else if (err.details && err.details.message) {
-            message = err.details.message;
+        switch (err.code) {
+            case 'auth/email-already-in-use':
+                message = 'This email is already associated with an account.';
+                break;
+            case 'auth/weak-password':
+                message = 'Password should be at least 6 characters long.';
+                break;
+            case 'auth/invalid-email':
+                message = 'Please enter a valid email address.';
+                break;
+            default:
+                message = err.message || message;
         }
 
         setError(message);
@@ -300,15 +293,13 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
-            // 2. Call the backend function to create the user profile in Firestore
-            const functions = getFunctions(auth.app);
-            const setInitialUserRole = httpsCallable(functions, 'setInitialUserRole');
-            await setInitialUserRole({ uid: user.uid, role: role, email: user.email, username: username });
+            // NOTE: The onUserCreate trigger in functions/src/index.ts will now automatically create the Firestore profile.
+            // We no longer need to call a function from the client.
 
-            // 3. Send the verification email
+            // 2. Send the verification email
             await sendEmailVerification(user);
             
-            // 4. Show success and navigate to login
+            // 3. Show success and navigate to login
             setSuccessMessage('Account created! A verification link has been sent to your email. You can now log in.');
             setTimeout(() => {
                 setAuthView('login');

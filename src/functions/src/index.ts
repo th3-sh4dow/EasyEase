@@ -1,134 +1,47 @@
 
 import * as admin from "firebase-admin";
-import { HttpsError, onCall } from "firebase-functions/v2/https";
-import { setGlobalOptions } from "firebase-functions";
+import {onUserCreate} from "firebase-functions/v2/auth";
+import {setGlobalOptions} from "firebase-functions";
 import * as logger from "firebase-functions/logger";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
 // Set global options for all functions
-setGlobalOptions({ maxInstances: 10 });
+setGlobalOptions({maxInstances: 10});
 
 /**
- * Checks if a username already exists in the userProfiles collection.
- * @param {string} username The username to check.
- * @returns {Promise<boolean>} True if the username exists, false otherwise.
+ * Triggered when a new user is created.
+ * Creates a corresponding user profile in Firestore.
  */
-const checkUsernameExists = async (username: string): Promise<boolean> => {
-  const query = admin.firestore().collection('userProfiles').where('username', '==', username).limit(1);
-  const snapshot = await query.get();
-  return !snapshot.empty;
-};
+export const createProfile = onUserCreate(async (event) => {
+  const user = event.data;
+  const {uid, email, displayName, photoURL} = user;
 
-/**
- * Ensures a username is unique by appending a number if it already exists.
- * @param {string} baseUsername The desired username.
- * @returns {Promise<string>} A unique username.
- */
-const ensureUniqueUsername = async (baseUsername: string): Promise<string> => {
-  let username = baseUsername;
-  let attempts = 0;
-  while (await checkUsernameExists(username)) {
-    attempts++;
-    username = `${baseUsername}${attempts}`;
-    if (attempts > 10) { // Failsafe to prevent infinite loops
-        throw new HttpsError('internal', 'Could not generate a unique username.');
-    }
-  }
-  return username;
-};
+  // Default role is 'student'. In a real app, this could be
+  // determined by email domain, a custom claim, etc.
+  const role = "student";
 
-// Function to generate a username from an email
-const generateUsernameFromEmail = (email: string | undefined): string => {
-    if (!email) {
-        return `user${Date.now().toString().slice(-5)}`;
-    }
-    const emailPart = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
-    const timestampPart = Date.now().toString().slice(-5);
-    return `${emailPart}${timestampPart}`;
-}
-
-
-interface SetInitialUserRoleData {
-    uid: string;
-    role: 'student' | 'institute';
-    email: string;
-    username?: string;
-}
-
-/**
- * A callable function to set a user's role and create their Firestore profile.
- * This is the single source of truth for user initialization.
- */
-export const setInitialUserRole = onCall(async (request: { data: SetInitialUserRoleData }) => {
-  // 1. Authentication and Validation
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
-  }
-
-  const { uid, role, email, username: requestedUsername } = request.data;
-  
-  // Security: Ensure users can only initialize their own profile.
-  if (request.auth.uid !== uid) {
-      logger.error(`Attempt by user ${request.auth.uid} to initialize profile for ${uid}.`);
-      throw new HttpsError('permission-denied', 'You can only initialize your own user profile.');
-  }
-  
-  if (!uid || !role || !email) {
-    logger.error("Missing required arguments", { uid, role, email });
-    throw new HttpsError('invalid-argument', 'The function must be called with "uid", "role", and "email" arguments.');
-  }
-
-  if (!['student', 'institute'].includes(role)) {
-    logger.error("Invalid role specified", { uid, role });
-    throw new HttpsError('invalid-argument', 'Role must be either "student" or "institute".');
-  }
-
-  // 2. Core Logic
-  const userProfileRef = admin.firestore().collection('userProfiles').doc(uid);
-  let finalUsername = '';
+  const userProfile = {
+    id: uid,
+    email,
+    firstName: displayName?.split(" ")[0] || "",
+    lastName: displayName?.split(" ").slice(1).join(" ") || "",
+    photoURL: photoURL || "",
+    role: role,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
 
   try {
-    const profileDoc = await userProfileRef.get();
-    
-    // Idempotency: If profile already exists, just return.
-    if (profileDoc.exists) {
-        logger.warn(`Profile for user ${uid} already exists.`);
-        return { success: true, alreadyExists: true, message: 'Profile already exists.' };
-    }
-    
-    // Determine unique username
-    if (requestedUsername) {
-        finalUsername = await ensureUniqueUsername(requestedUsername);
-    } else {
-        finalUsername = await ensureUniqueUsername(generateUsernameFromEmail(email));
-    }
-
-    const userProfile = {
-        id: uid,
-        email: email,
-        username: finalUsername,
-        firstName: "",
-        lastName: "",
-        photoURL: "",
-        role: role,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    };
-
-    // Create the user profile document in Firestore
-    await userProfileRef.set(userProfile);
-    
-    logger.info(`Successfully initialized user ${uid} with role '${role}' and username '${finalUsername}'.`);
-    return { success: true, alreadyExists: false, message: `User initialized with role '${role}'.` };
-
-  } catch (error: any) {
-    logger.error(`Error initializing user ${uid}:`, error);
-
-    if (error instanceof HttpsError) {
-        throw error;
-    }
-    throw new HttpsError('internal', 'An internal error occurred while initializing the user account.');
+    await admin.firestore().collection("userProfiles").doc(uid).set(userProfile);
+    logger.info(`Successfully created profile for user: ${uid}`);
+    return null;
+  } catch (error) {
+    logger.error(`Error creating profile for user: ${uid}`, error);
+    // Optionally, you could delete the user from Auth to ensure consistency
+    // await admin.auth().deleteUser(uid);
+    return null;
   }
 });
+
+    
