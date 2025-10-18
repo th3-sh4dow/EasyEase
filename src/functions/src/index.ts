@@ -1,22 +1,17 @@
 
 import * as admin from "firebase-admin";
-import {onUserCreate} from "firebase-functions/v2/auth";
-import {setGlobalOptions} from "firebase-functions";
+import * as functions from "firebase-functions";
 import * as logger from "firebase-functions/logger";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
-// Set global options for all functions
-setGlobalOptions({maxInstances: 10});
-
 /**
- * Triggered when a new user is created.
- * Creates a corresponding user profile in Firestore.
+ * Triggered when a new user is created in Firebase Authentication.
+ * Creates a corresponding user profile in Firestore using v1 trigger syntax for stability.
  */
-export const createProfile = onUserCreate(async (event) => {
-  const user = event.data;
-  const {uid, email, displayName, photoURL} = user;
+export const createProfile = functions.auth.user().onCreate(async (user) => {
+  const { uid, email, displayName, photoURL } = user;
 
   // Default role is 'student'. In a real app, this could be
   // determined by email domain, a custom claim, etc.
@@ -25,9 +20,10 @@ export const createProfile = onUserCreate(async (event) => {
   const userProfile = {
     id: uid,
     email,
-    username: displayName || email?.split('@')[0] || `user_${uid.substring(0, 5)}`,
+    // Use the displayName set during signup to populate first/last names.
     firstName: displayName?.split(" ")[0] || "",
     lastName: displayName?.split(" ").slice(1).join(" ") || "",
+    username: displayName || email?.split('@')[0] || `user_${uid.substring(0, 5)}`,
     photoURL: photoURL || "",
     role: role,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -35,14 +31,10 @@ export const createProfile = onUserCreate(async (event) => {
 
   try {
     await admin.firestore().collection("userProfiles").doc(uid).set(userProfile);
-    logger.info(`Successfully created profile for user: ${uid}`);
+    logger.info(`✅ Successfully created profile for user: ${uid}`);
     return null;
   } catch (error) {
-    logger.error(`Error creating profile for user: ${uid}`, error);
-    // Optionally, you could delete the user from Auth to ensure consistency
-    // await admin.auth().deleteUser(uid);
+    logger.error(`🔥 Error creating profile for user: ${uid}`, error);
     return null;
   }
 });
-
-    

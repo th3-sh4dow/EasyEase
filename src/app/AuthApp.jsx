@@ -291,9 +291,11 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             const user = userCredential.user;
 
             // 2. Set the user's display name. This is CRUCIAL for the backend function.
+            // The onUserCreate trigger needs this to populate the Firestore profile.
             await updateProfile(user, { displayName: username });
             
             // NOTE: The onUserCreate trigger in functions/src/index.ts will now automatically create the Firestore profile.
+            // We no longer need to call a function from the client.
             
             // 3. Send the verification email
             await sendEmailVerification(user);
@@ -346,7 +348,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Username"
+                placeholder="Full Name or Username"
                 icon={<UserIcon className="w-5 h-5 text-gray-400" />}
                 autoComplete="username"
             />
@@ -483,5 +485,3 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
-
-    
