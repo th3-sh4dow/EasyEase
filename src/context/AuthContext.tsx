@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
-  const loading = !authInitialized || (user && profileLoading);
+  const loading = !authInitialized || profileLoading;
   
   const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(pathname);
   const isDashboardPage = pathname.startsWith('/dashboard');
@@ -48,6 +48,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userProfile = { id: docSnap.id, ...docSnap.data() } as UserProfile;
           setProfile(userProfile);
         } else {
+          // Profile doesn't exist yet, might be in the process of creation.
+          // Don't set profile to null immediately, wait for potential creation.
+          // If it's truly missing, the user won't be able to access protected routes.
           setProfile(null);
         }
         setProfileLoading(false);
@@ -55,6 +58,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error("Error fetching user profile:", error);
         setProfile(null);
         setProfileLoading(false);
+        // If there's an error fetching the profile, it might be a permissions issue.
+        // Signing out is a safe fallback.
         if (firebaseAuth) firebaseAuth.signOut();
       });
     } else {
@@ -72,6 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // This effect handles all redirection logic based on auth and profile state.
   useEffect(() => {
+    // Wait until authentication and profile loading are complete
     if (loading) {
       return;
     }
