@@ -308,6 +308,8 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             setSuccessMessage('Account created! A verification link has been sent to your email. You can now log in.');
             setTimeout(() => {
                 setAuthView('login');
+                // Clear the success message so it doesn't persist on the login screen
+                setSuccessMessage('');
             }, 3000);
             
         } catch (err) {
