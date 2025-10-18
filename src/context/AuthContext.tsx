@@ -47,13 +47,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (docSnap.exists()) {
           const userProfile = { id: docSnap.id, ...docSnap.data() } as UserProfile;
           setProfile(userProfile);
+          setProfileLoading(false); // Profile found, loading is done.
         } else {
-          // Profile doesn't exist yet, might be in the process of creation.
-          // Don't set profile to null immediately, wait for potential creation.
-          // If it's truly missing, the user won't be able to access protected routes.
+          // This is a key part for new users.
+          // The profile doesn't exist yet. We don't stop loading.
+          // We keep listening. The Cloud Function will create it soon.
           setProfile(null);
+          // Only stop loading if we're sure the user is old and has no profile
+          // A simple timeout can handle this to prevent infinite loading for broken accounts.
+          const timer = setTimeout(() => {
+            if (!profile) { // Check if profile is still null after a delay
+              setProfileLoading(false);
+            }
+          }, 3000); // Wait 3 seconds before giving up on a profile
+          return () => clearTimeout(timer);
         }
-        setProfileLoading(false);
       }, (error) => {
         console.error("Error fetching user profile:", error);
         setProfile(null);
@@ -73,7 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         unsubscribe();
       }
     };
-  }, [user, authInitialized, firestore, firebaseAuth]);
+  }, [user, authInitialized, firestore, firebaseAuth, profile]); // Added profile to deps
 
   // This effect handles all redirection logic based on auth and profile state.
   useEffect(() => {
@@ -85,12 +93,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // If the user is logged in and has a profile with a role
     if (user && profile?.role) {
       const correctDashboardPath = `/dashboard/${profile.role}`;
-      // If on an auth page, redirect to the correct dashboard.
-      if (isAuthPage) {
-        router.replace(correctDashboardPath);
-      } 
-      // If on a dashboard page, but it's the wrong one for their role, redirect.
-      else if (isDashboardPage && !pathname.startsWith(correctDashboardPath)) {
+      // If on an auth page, or the wrong dashboard, redirect.
+      if (isAuthPage || (isDashboardPage && !pathname.startsWith(correctDashboardPath))) {
         router.replace(correctDashboardPath);
       }
     } 
