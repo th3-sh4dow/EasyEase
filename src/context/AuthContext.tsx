@@ -5,7 +5,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { User } from 'firebase/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { useUser, useFirestore, useAuth as useFirebaseAuth } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 
 // --- Types ---
@@ -27,7 +27,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
-  // Overall loading state is true until auth is checked AND the first profile load attempt is finished.
   const loading = !authInitialized || profileLoading;
   
   const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(pathname);
@@ -35,24 +34,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Effect for fetching the user's profile from Firestore
   useEffect(() => {
-    if (!user || !firestore) {
+    // If there's no authenticated user, we don't need to fetch a profile.
+    if (!user) {
       setProfile(null);
-      setProfileLoading(false);
+      setProfileLoading(false); // We're done loading since there's no user.
       return;
     }
 
     setProfileLoading(true);
     const profileRef = doc(firestore, 'userProfiles', user.uid);
     
+    // Listen for real-time updates to the profile.
+    // This is crucial for new signups, as the document might not exist immediately.
     const unsubscribe = onSnapshot(profileRef, (docSnap) => {
       if (docSnap.exists()) {
         setProfile({ id: docSnap.id, ...docSnap.data() } as UserProfile);
       } else {
-        // The profile might not be created yet by the backend function.
-        // We set it to null but keep listening.
+        // The profile document hasn't been created yet by the backend function.
+        // We set it to null and continue to listen.
         setProfile(null);
       }
-      // We are done with the initial load attempt.
+      // We consider profile loading finished once we get the first response (even if it's empty).
       setProfileLoading(false);
     }, (error) => {
       console.error("Error fetching user profile:", error);
@@ -66,16 +68,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // This effect handles all redirection logic based on auth and profile state.
   useEffect(() => {
-    // Wait until all initial loading is complete before doing any redirection.
+    // Wait until initial auth check and first profile fetch attempt are complete.
     if (loading) {
       return;
     }
 
-    // If the user is logged in and has a profile with a role...
+    // If the user is logged in and we have their profile with a role...
     if (user && profile?.role) {
       const correctDashboardPath = `/dashboard/${profile.role}`;
-      // If they are on an auth page (e.g., /login) or the wrong dashboard, redirect them.
-      if (isAuthPage || (isDashboardPage && !pathname.startsWith(correctDashboardPath))) {
+      // If they are on an auth page (like /login) or the wrong dashboard, redirect them.
+      if (isAuthPage) {
         router.replace(correctDashboardPath);
       }
     } 

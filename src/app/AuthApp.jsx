@@ -154,13 +154,11 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
         switch (err.code) {
             case 'auth/user-not-found':
             case 'auth/invalid-email':
-                message = 'No account found with that email address.';
+            case 'auth/invalid-credential':
+                message = 'Invalid credentials. Please check your email and password.';
                 break;
             case 'auth/wrong-password':
                 message = 'Incorrect password. Please try again.';
-                break;
-            case 'auth/invalid-credential':
-                message = 'Invalid credentials. Please check your email and password.';
                 break;
             case 'auth/too-many-requests':
                 message = 'Access temporarily disabled due to too many failed login attempts. Please reset your password or try again later.';
@@ -184,7 +182,6 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
         try {
             await signInWithEmailAndPassword(auth, email, password);
             // On successful login, the AuthProvider will handle the redirection.
-            // No need to do anything here.
         } catch (err) {
             handleAuthError(err);
         } finally {
@@ -293,12 +290,11 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // 2. Set the user's display name
+            // 2. Set the user's display name. This is CRUCIAL for the backend function.
             await updateProfile(user, { displayName: username });
             
             // NOTE: The onUserCreate trigger in functions/src/index.ts will now automatically create the Firestore profile.
-            // We no longer need to call a function from the client.
-
+            
             // 3. Send the verification email
             await sendEmailVerification(user);
             
@@ -487,5 +483,3 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
-
-    

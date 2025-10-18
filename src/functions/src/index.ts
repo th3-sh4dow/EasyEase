@@ -25,7 +25,7 @@ export const createProfile = onUserCreate(async (event) => {
   const userProfile = {
     id: uid,
     email,
-    username: displayName || email, // Use display name as username, fallback to email
+    username: displayName || email?.split('@')[0] || `user_${uid.substring(0, 5)}`,
     firstName: displayName?.split(" ")[0] || "",
     lastName: displayName?.split(" ").slice(1).join(" ") || "",
     photoURL: photoURL || "",
@@ -44,5 +44,3 @@ export const createProfile = onUserCreate(async (event) => {
     return null;
   }
 });
-
-    
