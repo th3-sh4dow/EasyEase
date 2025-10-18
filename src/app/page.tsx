@@ -14,12 +14,21 @@ export default function Home() {
   // If the user is logged in, they will be redirected away by the provider.
   // While the auth state is loading, show a loader to prevent a flash
   // of the landing page for authenticated users who are about to be redirected.
-  if (loading || user) {
+  if (loading) {
      return (
         <div className="min-h-screen flex items-center justify-center bg-background text-lg">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
         </div>
       );
+  }
+  
+  if (user) {
+    // User is logged in, show a loader while AuthProvider redirects them.
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-lg">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   // If loading is finished and there is no user, show the public landing page.
