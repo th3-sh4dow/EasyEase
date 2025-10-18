@@ -38,3 +38,4 @@ export const createProfile = functions.auth.user().onCreate(async (user) => {
     return null;
   }
 });
+
