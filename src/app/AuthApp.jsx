@@ -150,25 +150,23 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleAuthError = (err) => {
-        let message = 'An unexpected error occurred.';
+        let message = 'An unexpected error occurred. Please try again.';
         switch (err.code) {
-            case 'auth/invalid-credential':
-                message = 'Invalid credentials. Please check your email and password.';
-                break;
             case 'auth/user-not-found':
+            case 'auth/invalid-email':
                 message = 'No account found with that email address.';
                 break;
             case 'auth/wrong-password':
                 message = 'Incorrect password. Please try again.';
                 break;
-            case 'auth/invalid-email':
-                message = 'Please enter a valid email address.';
+            case 'auth/invalid-credential':
+                message = 'Invalid credentials. Please check your email and password.';
                 break;
             case 'auth/too-many-requests':
                 message = 'Access temporarily disabled due to too many failed login attempts. Please reset your password or try again later.';
                 break;
             default:
-                message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : message;
+                message = err.message || message;
                 break;
         }
         setError(message);
@@ -185,7 +183,8 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
         
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            // AuthContext will handle redirection
+            // On successful login, the AuthProvider will handle the redirection.
+            // No need to do anything here.
         } catch (err) {
             handleAuthError(err);
         } finally {
@@ -263,13 +262,14 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                 case 'auth/invalid-email':
                     message = 'Please enter a valid email address.';
                     break;
+                 case 'functions/already-exists':
+                    message = 'A user with that username or email already has a profile.';
+                    break;
+                default:
+                    message = err.message || message;
             }
-        }
-        
-        if (err.details && err.details.message) {
+        } else if (err.details && err.details.message) {
             message = err.details.message;
-        } else if (err.code && err.code.startsWith('functions/')) {
-            message = 'A server error occurred during signup. Please try again later.';
         }
 
         setError(message);
@@ -296,20 +296,23 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
         setIsLoading(true);
 
         try {
+            // 1. Create the user in Firebase Auth
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
+            // 2. Call the backend function to create the user profile in Firestore
             const functions = getFunctions(auth.app);
             const setInitialUserRole = httpsCallable(functions, 'setInitialUserRole');
             await setInitialUserRole({ uid: user.uid, role: role, email: user.email, username: username });
 
+            // 3. Send the verification email
             await sendEmailVerification(user);
             
+            // 4. Show success and navigate to login
             setSuccessMessage('Account created! A verification link has been sent to your email. You can now log in.');
             setTimeout(() => {
                 setAuthView('login');
-                // Clear the success message so it doesn't persist on the login screen
-                setSuccessMessage('');
+                setSuccessMessage(''); // Clear message for the login screen
             }, 3000);
             
         } catch (err) {
@@ -492,3 +495,5 @@ const LoadingSpinner = ({ size = 'large' }) => (
 );
 
     
+
+      
