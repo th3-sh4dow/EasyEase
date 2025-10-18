@@ -27,16 +27,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
-  const loading = !authInitialized || profileLoading;
+  const loading = !authInitialized || (user && profileLoading);
   
   const isAuthPage = ['/login', '/signup', '/forgot-password'].includes(pathname);
   const isDashboardPage = pathname.startsWith('/dashboard');
 
   useEffect(() => {
     if (!authInitialized || !firestore) {
-      if(!authInitialized) {
-        setProfileLoading(true);
-      }
       return;
     };
 
@@ -79,18 +76,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // If the user is logged in and on an auth page, redirect them.
-    if (user && profile && isAuthPage) {
-        // Redirect to their specific dashboard
-        router.replace(`/dashboard/${profile.role}`);
+    // If the user is logged in and has a profile with a role
+    if (user && profile?.role) {
+      const correctDashboardPath = `/dashboard/${profile.role}`;
+      // If on an auth page, redirect to the correct dashboard.
+      if (isAuthPage) {
+        router.replace(correctDashboardPath);
+      } 
+      // If on a dashboard page, but it's the wrong one for their role, redirect.
+      else if (isDashboardPage && !pathname.startsWith(correctDashboardPath)) {
+        router.replace(correctDashboardPath);
+      }
     } 
-    // If the user is not logged in but trying to access a dashboard, redirect to login
+    // If the user is NOT logged in but is trying to access a protected dashboard page
     else if (!user && isDashboardPage) {
         router.replace('/login');
-    }
-    // If the user is logged in, has a profile, and is trying to access the wrong dashboard
-    else if (user && profile && isDashboardPage && !pathname.startsWith(`/dashboard/${profile.role}`)) {
-        router.replace(`/dashboard/${profile.role}`);
     }
 
   }, [user, profile, loading, pathname, isAuthPage, isDashboardPage, router]);
