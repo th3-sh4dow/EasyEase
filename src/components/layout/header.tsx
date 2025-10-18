@@ -4,8 +4,13 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, BookOpenCheck } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { UserProfile } from '@/components/ui/user-profile';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function Header() {
+  const { user, profile, loading } = useAuth();
+
   const navLinks = [
     { href: '#features', label: 'Features' },
     { href: '#pricing', label: 'Pricing' },
@@ -69,14 +74,25 @@ export function Header() {
           </div>
 
           <div className="flex flex-1 items-center justify-end space-x-2">
-            <nav className="flex items-center">
-              <Button variant="ghost" asChild>
-                <Link href="/login">Login</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/signup">Sign Up</Link>
-              </Button>
-            </nav>
+            {loading ? (
+                <Skeleton className="h-8 w-24" />
+            ) : user && profile ? (
+                <nav className="flex items-center gap-4">
+                    <Button variant="outline" asChild>
+                        <Link href={`/dashboard/${profile.role}`}>Dashboard</Link>
+                    </Button>
+                    <UserProfile />
+                </nav>
+            ) : (
+                <nav className="flex items-center">
+                    <Button variant="ghost" asChild>
+                        <Link href="/login">Login</Link>
+                    </Button>
+                    <Button asChild>
+                        <Link href="/signup">Sign Up</Link>
+                    </Button>
+                </nav>
+            )}
           </div>
         </div>
       </header>

@@ -51,8 +51,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userProfile = { id: docSnap.id, ...docSnap.data() } as UserProfile;
           setProfile(userProfile);
         } else {
-          // Profile doesn't exist yet. This can happen right after signup.
-          // We'll keep listening, but set profile to null for now.
           setProfile(null);
         }
         setProfileLoading(false);
@@ -77,27 +75,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // This effect handles all redirection logic based on auth and profile state.
   useEffect(() => {
-    // Don't redirect until auth and profile loading is complete
     if (loading) {
       return;
     }
 
-    if (user && profile?.role) {
-      // User is logged in and has a profile with a role
-      const targetDashboard = `/dashboard/${profile.role}`;
-      // If they are on an auth page, or a dashboard page that is not their own, redirect.
-      if (isAuthPage || (isDashboardPage && !pathname.startsWith(targetDashboard))) {
-        router.replace(targetDashboard);
-      }
-    } else if (user && !profile) {
-        // User is logged in but profile is not yet created or found.
-        // This is a transient state right after signup.
-        // We don't redirect, we wait for the listener in the first useEffect to find the profile.
-        // If they are on a dashboard page, they might see a loader or brief error until profile loads.
-    }
+    // If the user is logged in and on an auth page, redirect them.
+    if (user && profile && isAuthPage) {
+        // Redirect to their specific dashboard
+        router.replace(`/dashboard/${profile.role}`);
+    } 
+    // If the user is not logged in but trying to access a dashboard, redirect to login
     else if (!user && isDashboardPage) {
-      // User is not logged in but is trying to access a protected dashboard page.
-      router.replace('/login');
+        router.replace('/login');
+    }
+    // If the user is logged in, has a profile, and is trying to access the wrong dashboard
+    else if (user && profile && isDashboardPage && !pathname.startsWith(`/dashboard/${profile.role}`)) {
+        router.replace(`/dashboard/${profile.role}`);
     }
 
   }, [user, profile, loading, pathname, isAuthPage, isDashboardPage, router]);
