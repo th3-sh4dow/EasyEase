@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -34,8 +35,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!authInitialized || !firestore) {
+      setProfileLoading(false);
       return;
-    };
+    }
 
     let unsubscribe: (() => void) | null = null;
 
@@ -47,27 +49,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (docSnap.exists()) {
           const userProfile = { id: docSnap.id, ...docSnap.data() } as UserProfile;
           setProfile(userProfile);
-          setProfileLoading(false); // Profile found, loading is done.
+          // Profile is loaded, we can stop the main loading indicator.
+          setProfileLoading(false);
         } else {
-          // This is a key part for new users.
-          // The profile doesn't exist yet. We don't stop loading.
-          // We keep listening. The Cloud Function will create it soon.
-          setProfile(null);
-          // Only stop loading if we're sure the user is old and has no profile
-          // A simple timeout can handle this to prevent infinite loading for broken accounts.
-          const timer = setTimeout(() => {
-            if (!profile) { // Check if profile is still null after a delay
-              setProfileLoading(false);
-            }
-          }, 3000); // Wait 3 seconds before giving up on a profile
+          // Profile does not exist yet. We keep listening.
+          // setProfileLoading is NOT set to false here, to allow the redirection logic to wait.
+          // A failsafe timeout is added to prevent infinite loading for genuinely broken accounts.
+          const timer = setTimeout(() => setProfileLoading(false), 5000); // Give up after 5 seconds
           return () => clearTimeout(timer);
         }
       }, (error) => {
         console.error("Error fetching user profile:", error);
         setProfile(null);
         setProfileLoading(false);
-        // If there's an error fetching the profile, it might be a permissions issue.
-        // Signing out is a safe fallback.
         if (firebaseAuth) firebaseAuth.signOut();
       });
     } else {
@@ -81,7 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         unsubscribe();
       }
     };
-  }, [user, authInitialized, firestore, firebaseAuth, profile]); // Added profile to deps
+  }, [user, authInitialized, firestore, firebaseAuth]);
 
   // This effect handles all redirection logic based on auth and profile state.
   useEffect(() => {
