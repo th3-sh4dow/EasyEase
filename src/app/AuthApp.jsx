@@ -8,11 +8,11 @@ import {
     sendEmailVerification,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
+    updateProfile,
 } from 'firebase/auth';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useRouter } from 'next/navigation';
 
 
@@ -292,14 +292,17 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             // 1. Create the user in Firebase Auth
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
+
+            // 2. Set the user's display name
+            await updateProfile(user, { displayName: username });
             
             // NOTE: The onUserCreate trigger in functions/src/index.ts will now automatically create the Firestore profile.
             // We no longer need to call a function from the client.
 
-            // 2. Send the verification email
+            // 3. Send the verification email
             await sendEmailVerification(user);
             
-            // 3. Show success and navigate to login
+            // 4. Show success and navigate to login
             setSuccessMessage('Account created! A verification link has been sent to your email. You can now log in.');
             setTimeout(() => {
                 setAuthView('login');
