@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -153,7 +154,6 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
         let message = 'An unexpected error occurred. Please try again.';
         switch (err.code) {
             case 'auth/user-not-found':
-            case 'auth/invalid-email':
             case 'auth/invalid-credential':
                 message = 'Invalid credentials. Please check your email and password.';
                 break;
@@ -483,3 +483,5 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
+
+    
